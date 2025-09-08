@@ -137,6 +137,7 @@
     <Compile Include="Forms\frmMain.Designer.cs">
       <DependentUpon>frmMain.cs</DependentUpon>
     </Compile>
+    <Compile Include="Middlewares\LoggingMiddleware.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\IngenicoService.cs" />
     <Compile Include="Services\Ingenico\BankList\BankList.cs" />

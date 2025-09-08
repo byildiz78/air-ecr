@@ -20,7 +20,7 @@ namespace Ecr.Module.Forms
 
         public frmMain()
         {
-            _logger = AppStatics.GetLogger();
+            _logger = AppStatics.GetLogger("EcrLog");
             var port = ConfigurationManager.AppSettings["Ecr.Port"];
 
             int.TryParse(port, out _port);

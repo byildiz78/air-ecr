@@ -1,4 +1,5 @@
-﻿using Owin;
+﻿using Ecr.Module.Middlewares;
+using Owin;
 using System;
 using System.Diagnostics;
 using System.Linq;
@@ -31,6 +32,7 @@ namespace Ecr.Module
                 defaults: new { id = RouteParameter.Optional }
             );
 
+            appBuilder.Use<LoggingMiddleware>();
             appBuilder.UseWebApi(config);
         }
     }
