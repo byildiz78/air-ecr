@@ -1,33 +1,50 @@
-﻿using Serilog;
-using Serilog.Sinks.File.Archive;
+﻿using Ecr.Module.Forms;
 using System;
-using System.IO.Compression;
+using System.IO;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace Ecr.Host
 {
     internal static class Program
     {
-        public static ILogger Logger { get; private set; }
+        private static Mutex _mutex = null;
 
         [STAThread]
         static void Main()
         {
-            Logger = new LoggerConfiguration()
-                            .Enrich.FromLogContext()
-                            .WriteTo.Console()
-                            .WriteTo.File("EcrLog\\log_.txt",
-                                          rollingInterval: RollingInterval.Day,
-                                          rollOnFileSizeLimit: true,
-                                          fileSizeLimitBytes: 100_000_000,
-                                          retainedFileCountLimit: 1,
-                                          hooks: new ArchiveHooks(CompressionLevel.Fastest))
-                            .MinimumLevel.Debug()
-                            .CreateLogger();
+            Directory.SetCurrentDirectory(AppDomain.CurrentDomain.BaseDirectory);
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new frmMain());
+
+            var currentPath = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
+
+            // Klasör yolundan benzersiz bir Mutex adı oluşturuyoruz
+            // Klasör yolundaki karakterleri Mutex adı için güvenli hale getiriyoruz
+            var mutexName = "Global\\InfiniaClient_" + currentPath.GetHashCode().ToString("X");
+
+            var createdNew = false;
+
+            // Mutex'i oluşturuyoruz
+            _mutex = new Mutex(true, mutexName, out createdNew);
+
+            if (!createdNew)
+                return;
+
+            try
+            {
+                Application.Run(new frmMain());
+            }
+            finally
+            {
+                // Uygulama kapanırken Mutex'i serbest bırakıyoruz
+                if (_mutex != null && createdNew)
+                {
+                    _mutex.ReleaseMutex();
+                    _mutex.Dispose();
+                }
+            }
         }
     }
 }

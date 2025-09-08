@@ -1,10 +1,6 @@
 ﻿using Ecr.Module.Services.Ingenico.Models;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Xml;
 
 namespace Ecr.Module.Services.Ingenico.Settings

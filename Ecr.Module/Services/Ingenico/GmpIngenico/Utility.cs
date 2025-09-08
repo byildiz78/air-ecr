@@ -32,10 +32,10 @@ public class gmpTag
 {
     public gmpTag(int pTag, int pType,int pPart,string pDesc)
     {
-        this.Tag = pTag;
-        this.Type= pType;
-        this.Part = pPart;
-        this.Desc = pDesc;
+        Tag = pTag;
+        Type= pType;
+        Part = pPart;
+        Desc = pDesc;
     }
 
     public int  Tag;

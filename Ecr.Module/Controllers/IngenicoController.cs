@@ -16,11 +16,8 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
 using System.Web.Http;
-using System.Web.Http.Results;
 using System.Windows.Forms;
-using System.Xml;
 
 namespace Ecr.Module.Controllers
 {

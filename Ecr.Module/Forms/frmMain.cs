@@ -1,17 +1,11 @@
+﻿using Ecr.Module.Statics;
 using Microsoft.Owin.Hosting;
-using Ecr.Module;
-using Ecr.Module.Controllers;
+using Serilog;
 using System;
 using System.Drawing;
-using System.Net;
-using System.Net.Sockets;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows.Forms;
-using Ecr.Module.Services.Ingenico.Models;
-using System.Runtime.InteropServices;
 
-namespace Ecr.Host
+namespace Ecr.Module.Forms
 {
     public partial class frmMain : Form
     {
@@ -19,24 +13,24 @@ namespace Ecr.Host
         private bool _apiRunning = false;
         private NotifyIcon _trayIcon;
         private ContextMenuStrip _trayMenu;
-        private System.Threading.Timer _connectionCheckTimer;
         private const string BaseAddress = "http://localhost:9000/";
-        private const int ConnectionCheckInterval = 10000; // 10 saniye
+        private ILogger _logger;
 
         public frmMain()
         {
+            _logger = AppStatics.GetLogger();
+
             InitializeComponent();
             InitializeTrayIcon();
-            this.FormClosing += Form1_FormClosing;
-            this.Resize += FrmMain_Resize;
+            FormClosing += Form1_FormClosing;
+            Resize += FrmMain_Resize;
         }
 
         private void Form1_Load(object sender, EventArgs e)
         {
             Toggle();
-            StartConnectionCheck();
-            this.WindowState = FormWindowState.Minimized;
-            this.ShowInTaskbar = false;
+            WindowState = FormWindowState.Minimized;
+            ShowInTaskbar = false;
             _trayIcon.Visible = true;
         }
 
@@ -46,13 +40,12 @@ namespace Ecr.Host
             if (e.CloseReason == CloseReason.UserClosing)
             {
                 e.Cancel = true;
-                this.WindowState = FormWindowState.Minimized;
-                this.ShowInTaskbar = false;
+                WindowState = FormWindowState.Minimized;
+                ShowInTaskbar = false;
                 _trayIcon.Visible = true;
             }
             else
             {
-                StopConnectionCheck();
                 StopApiServer();
                 _trayIcon.Dispose();
             }
@@ -63,11 +56,11 @@ namespace Ecr.Host
             try
             {
                 _webApp = WebApp.Start<Startup>(url: BaseAddress);
-                Program.Logger.Information("API sunucusu başlatıldı: {BaseAddress}", BaseAddress);
+                _logger.Information("API sunucusu başlatıldı: {BaseAddress}", BaseAddress);
             }
             catch (Exception ex)
             {
-                Program.Logger.Error(ex, "API sunucusu başlatılamadı: {Message}", ex.Message);
+                _logger.Error(ex, "API sunucusu başlatılamadı: {Message}", ex.Message);
             }
         }
 
@@ -78,7 +71,7 @@ namespace Ecr.Host
                 _webApp.Dispose();
                 _webApp = null;
 
-                Program.Logger.Information("API sunucusu durduruldu.");
+                _logger.Information("API sunucusu durduruldu.");
             }
         }
 
@@ -127,7 +120,7 @@ namespace Ecr.Host
 
             _trayIcon = new NotifyIcon()
             {
-                Icon = this.Icon,
+                Icon = Icon,
                 ContextMenuStrip = _trayMenu,
                 Text = "ECR Host",
                 Visible = true
@@ -145,133 +138,53 @@ namespace Ecr.Host
         private void OnTrayOpenClick(object sender, EventArgs e)
         {
             Show();
-            this.WindowState = FormWindowState.Normal;
-            this.ShowInTaskbar = true;
-            this.Activate();
+            WindowState = FormWindowState.Normal;
+            ShowInTaskbar = true;
+            Activate();
         }
 
         private void OnTrayStartApiClick(object sender, EventArgs e)
         {
             if (!_apiRunning)
-            {
                 Toggle();
-            }
         }
 
         private void OnTrayStopApiClick(object sender, EventArgs e)
         {
             if (_apiRunning)
-            {
                 Toggle();
-            }
         }
 
         private void OnTrayExitClick(object sender, EventArgs e)
         {
-            // Gerçekten çıkış yapılacak
-            StopConnectionCheck();
             StopApiServer();
             _trayIcon.Visible = false;
             Application.Exit();
         }
-        
+
         private void OnShowNotificationHistoryClick(object sender, EventArgs e)
         {
             // Ana formu göster
-            this.WindowState = FormWindowState.Normal;
-            this.ShowInTaskbar = true;
-            this.Activate();
+            WindowState = FormWindowState.Normal;
+            ShowInTaskbar = true;
+            Activate();
         }
-        
-      
+
         private void FrmMain_Resize(object sender, EventArgs e)
         {
-            if (this.WindowState == FormWindowState.Minimized)
+            if (WindowState == FormWindowState.Minimized)
             {
-                this.ShowInTaskbar = false;
+                ShowInTaskbar = false;
                 _trayIcon.Visible = true;
             }
         }
 
-    
-        #endregion
-
-        #region Bağlantı Kontrolü
-
-        private void StartConnectionCheck()
-        {
-            _connectionCheckTimer = new System.Threading.Timer(CheckConnection, null, 0, ConnectionCheckInterval);
-            Program.Logger.Information("Bağlantı kontrolü başlatıldı. Kontrol aralığı: {Interval}ms", ConnectionCheckInterval);
-        }
-
-        private void StopConnectionCheck()
-        {
-            if (_connectionCheckTimer != null)
-            {
-                _connectionCheckTimer.Dispose();
-                _connectionCheckTimer = null;
-                Program.Logger.Information("Bağlantı kontrolü durduruldu.");
-            }
-        }
-
-        private void CheckConnection(object state)
-        {
-            if (!_apiRunning) return;
-
-            try
-            {
-                // UI thread'de çalıştır
-                this.BeginInvoke(new Action(() =>
-                {
-                    bool isConnected = IsPortOpen("localhost", 9000);
-
-                    if (!isConnected && _apiRunning)
-                    {
-                        Program.Logger.Warning("API bağlantısı kesildi. Yeniden başlatılıyor...");
-                        
-                        // API'yi yeniden başlat
-                        StopApiServer();
-                        _apiRunning = false;
-                        StartApiServer();
-                        if (_webApp != null)
-                        {
-                            _apiRunning = true;
-                            UpdateTrayMenuStatus(true);
-                            btnToggleApi.Text = "API'yi Durdur";
-                        }
-                    }
-                }));
-            }
-            catch (Exception ex)
-            {
-                Program.Logger.Error(ex, "Bağlantı kontrolü sırasında hata: {Message}", ex.Message);
-            }
-        }
-
-        private bool IsPortOpen(string host, int port)
-        {
-            try
-            {
-                using (var client = new TcpClient())
-                {
-                    var result = client.BeginConnect(host, port, null, null);
-                    var success = result.AsyncWaitHandle.WaitOne(TimeSpan.FromSeconds(1));
-                    client.EndConnect(result);
-                    return success;
-                }
-            }
-            catch
-            {
-                return false;
-            }
-        }
 
         #endregion
+
 
         private void button1_Click(object sender, EventArgs e)
         {
-            // Gerçekten çıkış yapılacak
-            StopConnectionCheck();
             StopApiServer();
             _trayIcon.Visible = false;
             Application.Exit();
@@ -280,12 +193,9 @@ namespace Ecr.Host
         private void button2_Click(object sender, EventArgs e)
         {
             // Uygulamayı sistem tepsisine küçült
-            this.WindowState = FormWindowState.Minimized;
-            this.ShowInTaskbar = false;
+            WindowState = FormWindowState.Minimized;
+            ShowInTaskbar = false;
             _trayIcon.Visible = true;
         }
-
-        
     }
-
 }

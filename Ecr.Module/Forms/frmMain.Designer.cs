@@ -1,4 +1,4 @@
-namespace Ecr.Host
+﻿namespace Ecr.Module.Forms
 {
     partial class frmMain
     {
@@ -48,8 +48,9 @@ namespace Ecr.Host
             this.pnlHeader.Controls.Add(this.lblTitle);
             this.pnlHeader.Dock = System.Windows.Forms.DockStyle.Top;
             this.pnlHeader.Location = new System.Drawing.Point(0, 0);
+            this.pnlHeader.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.pnlHeader.Name = "pnlHeader";
-            this.pnlHeader.Size = new System.Drawing.Size(500, 35);
+            this.pnlHeader.Size = new System.Drawing.Size(750, 54);
             this.pnlHeader.TabIndex = 0;
             // 
             // lblTitle
@@ -57,9 +58,10 @@ namespace Ecr.Host
             this.lblTitle.AutoSize = true;
             this.lblTitle.Font = new System.Drawing.Font("Segoe UI", 10F, System.Drawing.FontStyle.Bold);
             this.lblTitle.ForeColor = System.Drawing.Color.White;
-            this.lblTitle.Location = new System.Drawing.Point(12, 8);
+            this.lblTitle.Location = new System.Drawing.Point(18, 12);
+            this.lblTitle.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblTitle.Name = "lblTitle";
-            this.lblTitle.Size = new System.Drawing.Size(121, 19);
+            this.lblTitle.Size = new System.Drawing.Size(171, 28);
             this.lblTitle.TabIndex = 0;
             this.lblTitle.Text = "Infinia Yazarkasa";
             this.lblTitle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
@@ -70,10 +72,11 @@ namespace Ecr.Host
             this.pnlMain.Controls.Add(this.lblStatus);
             this.pnlMain.Controls.Add(this.btnToggleApi);
             this.pnlMain.Dock = System.Windows.Forms.DockStyle.Top;
-            this.pnlMain.Location = new System.Drawing.Point(0, 35);
+            this.pnlMain.Location = new System.Drawing.Point(0, 54);
+            this.pnlMain.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.pnlMain.Name = "pnlMain";
-            this.pnlMain.Padding = new System.Windows.Forms.Padding(20);
-            this.pnlMain.Size = new System.Drawing.Size(500, 109);
+            this.pnlMain.Padding = new System.Windows.Forms.Padding(30, 31, 30, 31);
+            this.pnlMain.Size = new System.Drawing.Size(750, 168);
             this.pnlMain.TabIndex = 1;
             // 
             // lblStatus
@@ -81,9 +84,10 @@ namespace Ecr.Host
             this.lblStatus.AutoSize = true;
             this.lblStatus.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.lblStatus.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(204)))), ((int)(((byte)(204)))), ((int)(((byte)(204)))));
-            this.lblStatus.Location = new System.Drawing.Point(20, 20);
+            this.lblStatus.Location = new System.Drawing.Point(30, 31);
+            this.lblStatus.Margin = new System.Windows.Forms.Padding(4, 0, 4, 0);
             this.lblStatus.Name = "lblStatus";
-            this.lblStatus.Size = new System.Drawing.Size(139, 15);
+            this.lblStatus.Size = new System.Drawing.Size(209, 25);
             this.lblStatus.TabIndex = 0;
             this.lblStatus.Text = "API Durumu: Durduruldu";
             // 
@@ -95,9 +99,10 @@ namespace Ecr.Host
             this.btnToggleApi.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnToggleApi.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
             this.btnToggleApi.ForeColor = System.Drawing.Color.White;
-            this.btnToggleApi.Location = new System.Drawing.Point(20, 46);
+            this.btnToggleApi.Location = new System.Drawing.Point(30, 71);
+            this.btnToggleApi.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnToggleApi.Name = "btnToggleApi";
-            this.btnToggleApi.Size = new System.Drawing.Size(140, 40);
+            this.btnToggleApi.Size = new System.Drawing.Size(210, 62);
             this.btnToggleApi.TabIndex = 1;
             this.btnToggleApi.Text = "API\'yi Başlat";
             this.btnToggleApi.UseVisualStyleBackColor = false;
@@ -111,9 +116,10 @@ namespace Ecr.Host
             this.btnMinimizeToTray.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnMinimizeToTray.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.btnMinimizeToTray.ForeColor = System.Drawing.Color.White;
-            this.btnMinimizeToTray.Location = new System.Drawing.Point(337, 93);
+            this.btnMinimizeToTray.Location = new System.Drawing.Point(506, 143);
+            this.btnMinimizeToTray.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnMinimizeToTray.Name = "btnMinimizeToTray";
-            this.btnMinimizeToTray.Size = new System.Drawing.Size(140, 40);
+            this.btnMinimizeToTray.Size = new System.Drawing.Size(210, 62);
             this.btnMinimizeToTray.TabIndex = 2;
             this.btnMinimizeToTray.Text = "Gizle";
             this.btnMinimizeToTray.UseVisualStyleBackColor = false;
@@ -125,10 +131,11 @@ namespace Ecr.Host
             this.pnlNotifications.Controls.Add(this.btnClearNotifications);
             this.pnlNotifications.Controls.Add(this.btnMinimizeToTray);
             this.pnlNotifications.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.pnlNotifications.Location = new System.Drawing.Point(0, 144);
+            this.pnlNotifications.Location = new System.Drawing.Point(0, 222);
+            this.pnlNotifications.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.pnlNotifications.Name = "pnlNotifications";
-            this.pnlNotifications.Padding = new System.Windows.Forms.Padding(20);
-            this.pnlNotifications.Size = new System.Drawing.Size(500, 156);
+            this.pnlNotifications.Padding = new System.Windows.Forms.Padding(30, 31, 30, 31);
+            this.pnlNotifications.Size = new System.Drawing.Size(750, 240);
             this.pnlNotifications.TabIndex = 2;
             // 
             // btnClearNotifications
@@ -140,9 +147,10 @@ namespace Ecr.Host
             this.btnClearNotifications.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnClearNotifications.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.btnClearNotifications.ForeColor = System.Drawing.Color.White;
-            this.btnClearNotifications.Location = new System.Drawing.Point(20, 93);
+            this.btnClearNotifications.Location = new System.Drawing.Point(30, 143);
+            this.btnClearNotifications.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnClearNotifications.Name = "btnClearNotifications";
-            this.btnClearNotifications.Size = new System.Drawing.Size(140, 40);
+            this.btnClearNotifications.Size = new System.Drawing.Size(210, 62);
             this.btnClearNotifications.TabIndex = 2;
             this.btnClearNotifications.Text = "Programı Kapat";
             this.btnClearNotifications.UseVisualStyleBackColor = false;
@@ -150,15 +158,16 @@ namespace Ecr.Host
             // 
             // frmMain
             // 
-            this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
+            this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
-            this.ClientSize = new System.Drawing.Size(500, 300);
+            this.ClientSize = new System.Drawing.Size(750, 462);
             this.Controls.Add(this.pnlNotifications);
             this.Controls.Add(this.pnlMain);
             this.Controls.Add(this.pnlHeader);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            this.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "frmMain";

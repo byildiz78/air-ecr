@@ -3,10 +3,6 @@ using Ecr.Module.Services.Ingenico.Helper;
 using Ecr.Module.Services.Ingenico.Models;
 using Ecr.Module.Services.Ingenico.SingleMethod;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Ecr.Module.Services.Ingenico.Print
 {
