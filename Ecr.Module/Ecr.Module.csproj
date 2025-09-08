@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{DF26E0FE-9936-4338-9ACB-EE880F8BF959}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>Ecr.Module</RootNamespace>
+    <AssemblyName>Ecr.Module</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Dapper, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Dapper.2.1.66\lib\net461\Dapper.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Http.Abstractions, Version=2.3.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNetCore.Http.Abstractions.2.3.0\lib\netstandard2.0\Microsoft.AspNetCore.Http.Abstractions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.AspNetCore.Http.Features, Version=2.3.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNetCore.Http.Features.2.3.0\lib\netstandard2.0\Microsoft.AspNetCore.Http.Features.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Bcl.AsyncInterfaces, Version=9.0.0.5, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Bcl.AsyncInterfaces.9.0.5\lib\net462\Microsoft.Bcl.AsyncInterfaces.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Extensions.Primitives, Version=8.0.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Extensions.Primitives.8.0.0\lib\net462\Microsoft.Extensions.Primitives.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Owin, Version=4.2.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Owin.4.2.2\lib\net45\Microsoft.Owin.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Owin.Host.HttpListener, Version=4.2.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Owin.Host.HttpListener.4.2.2\lib\net45\Microsoft.Owin.Host.HttpListener.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Owin.Hosting, Version=4.2.2.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Owin.Hosting.4.2.2\lib\net45\Microsoft.Owin.Hosting.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="Newtonsoft.Json.Bson, Version=1.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.Bson.1.0.3\lib\net45\Newtonsoft.Json.Bson.dll</HintPath>
+    </Reference>
+    <Reference Include="Owin, Version=1.0.0.0, Culture=neutral, PublicKeyToken=f0ebd12fd5e55cc5, processorArchitecture=MSIL">
+      <HintPath>..\packages\Owin.1.0\lib\net40\Owin.dll</HintPath>
+    </Reference>
+    <Reference Include="Serilog, Version=4.3.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10, processorArchitecture=MSIL">
+      <HintPath>..\packages\Serilog.4.3.0\lib\net471\Serilog.dll</HintPath>
+    </Reference>
+    <Reference Include="Serilog.Enrichers.Environment, Version=3.0.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10, processorArchitecture=MSIL">
+      <HintPath>..\packages\Serilog.Enrichers.Environment.3.0.1\lib\net471\Serilog.Enrichers.Environment.dll</HintPath>
+    </Reference>
+    <Reference Include="Serilog.Sinks.Console">
+      <HintPath>..\packages\Serilog.Sinks.Console.6.0.0\lib\net471\Serilog.Sinks.Console.dll</HintPath>
+    </Reference>
+    <Reference Include="Serilog.Sinks.File, Version=7.0.0.0, Culture=neutral, PublicKeyToken=24c2f752a8e58a10, processorArchitecture=MSIL">
+      <HintPath>..\packages\Serilog.Sinks.File.7.0.0\lib\net471\Serilog.Sinks.File.dll</HintPath>
+    </Reference>
+    <Reference Include="Serilog.Sinks.File.Archive">
+      <HintPath>..\packages\Serilog.Sinks.File.Archive.1.0.6\lib\net45\Serilog.Sinks.File.Archive.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Buffers, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Buffers.4.6.1\lib\net462\System.Buffers.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Core" />
+    <Reference Include="System.Diagnostics.DiagnosticSource, Version=9.0.0.5, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Diagnostics.DiagnosticSource.9.0.5\lib\net462\System.Diagnostics.DiagnosticSource.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Memory, Version=4.0.5.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Memory.4.6.3\lib\net462\System.Memory.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Net.Http.Formatting, Version=6.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebApi.Client.6.0.0\lib\net45\System.Net.Http.Formatting.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Numerics.Vectors, Version=4.1.6.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Numerics.Vectors.4.6.1\lib\net462\System.Numerics.Vectors.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Runtime.CompilerServices.Unsafe, Version=6.0.3.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Runtime.CompilerServices.Unsafe.6.1.2\lib\net462\System.Runtime.CompilerServices.Unsafe.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Text.Encodings.Web, Version=8.0.0.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Text.Encodings.Web.8.0.0\lib\net462\System.Text.Encodings.Web.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Channels, Version=9.0.0.5, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Threading.Channels.9.0.5\lib\net462\System.Threading.Channels.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Threading.Tasks.Extensions, Version=4.2.4.0, Culture=neutral, PublicKeyToken=cc7b13ffcd2ddd51, processorArchitecture=MSIL">
+      <HintPath>..\packages\System.Threading.Tasks.Extensions.4.6.3\lib\net462\System.Threading.Tasks.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Http, Version=5.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebApi.Core.5.3.0\lib\net45\System.Web.Http.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Web.Http.Owin, Version=5.3.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.AspNet.WebApi.Owin.5.3.0\lib\net45\System.Web.Http.Owin.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Deployment" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Controllers\IngenicoController.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\IngenicoService.cs" />
+    <Compile Include="Services\Ingenico\BankList\BankList.cs" />
+    <Compile Include="Services\Ingenico\FiscalLogManager\LogManagerOrder.cs" />
+    <Compile Include="Services\Ingenico\GmpIngenico\Defines.cs" />
+    <Compile Include="Services\Ingenico\GmpIngenico\ErrorClass.cs" />
+    <Compile Include="Services\Ingenico\GmpIngenico\GMPSmartDLL.cs" />
+    <Compile Include="Services\Ingenico\GmpIngenico\IFunctions.cs" />
+    <Compile Include="Services\Ingenico\GmpIngenico\Utility.cs" />
+    <Compile Include="Services\Ingenico\Helper\CommandHelperGmpProvider.cs" />
+    <Compile Include="Services\Ingenico\Models\BankInfoDto.cs" />
+    <Compile Include="Services\Ingenico\Models\BankPaymentRefundDto.cs" />
+    <Compile Include="Services\Ingenico\Models\BatchCommandResultDto.cs" />
+    <Compile Include="Services\Ingenico\Models\CommandDetail.cs" />
+    <Compile Include="Services\Ingenico\Models\ConnectionStatus.cs" />
+    <Compile Include="Services\Ingenico\Models\DataStore.cs" />
+    <Compile Include="Services\Ingenico\Models\FiscalHeaderDto.cs" />
+    <Compile Include="Services\Ingenico\Models\FiscalOrder.cs" />
+    <Compile Include="Services\Ingenico\Models\FiscalType.cs" />
+    <Compile Include="Services\Ingenico\Models\FiscalOrderType.cs" />
+    <Compile Include="Services\Ingenico\Models\GmpCommand.cs" />
+    <Compile Include="Services\Ingenico\Models\GmpInfoDto.cs" />
+    <Compile Include="Services\Ingenico\Models\GmpPairingDto.cs" />
+    <Compile Include="Services\Ingenico\Models\GmpPingResultDto.cs" />
+    <Compile Include="Services\Ingenico\Models\GmpPrepareDto.cs" />
+    <Compile Include="Services\Ingenico\Models\GmpPrintReceiptDto.cs" />
+    <Compile Include="Services\Ingenico\Models\GmpReportsInfoDto.cs" />
+    <Compile Include="Services\Ingenico\Models\IngenicoApiResponse.cs" />
+    <Compile Include="Services\Ingenico\Models\IngenicoTaxs.cs" />
+    <Compile Include="Services\Ingenico\Models\PaymentMethodType.cs" />
+    <Compile Include="Services\Ingenico\Models\ReceiptData.cs" />
+    <Compile Include="Services\Ingenico\Models\ReportRequest.cs" />
+    <Compile Include="Services\Ingenico\Models\ReportType.cs" />
+    <Compile Include="Services\Ingenico\Models\SettingsValues.cs" />
+    <Compile Include="Services\Ingenico\Models\TaxGroupsInfoDto.cs" />
+    <Compile Include="Services\Ingenico\Models\VersionInfo.cs" />
+    <Compile Include="Services\Ingenico\Pairing\PairingGmpProvider.cs" />
+    <Compile Include="Services\Ingenico\Print\PrintReceiptGmpProvider.cs" />
+    <Compile Include="Services\Ingenico\Print\PrintReceiptReturnMode.cs" />
+    <Compile Include="Services\Ingenico\Print\PrintUserMessage.cs" />
+    <Compile Include="Services\Ingenico\Print\PrintVoid.cs" />
+    <Compile Include="Services\Ingenico\Print\SinglePayment.cs" />
+    <Compile Include="Services\Ingenico\ReceiptHeader\Header.cs" />
+    <Compile Include="Services\Ingenico\Reports\ReportPrinting.cs" />
+    <Compile Include="Services\Ingenico\Settings\iniReader.cs" />
+    <Compile Include="Services\Ingenico\Settings\SettingsInfo.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\BankResponse.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\BatchCommand.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\BatchResult.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\CAfterCommand.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\CashReturn.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\CBeforeCommand.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\CommandError.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\CreditReturn.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\GetSinglePayment.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\GetTicket.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\MF.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\OptionFlags.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\PrinterClose.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\PrinterGetTlvData.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\PrinterItem.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\PrinterStart.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\PrinterVoidAll.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\ReceiptReturnCommand.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\ReceiptVoid.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\ReferenceNumber.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\RunCCommand.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\SingleFunctions.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\StartCommand.cs" />
+    <Compile Include="Services\Ingenico\TaxGroup\TaxGroup.cs" />
+    <Compile Include="Startup.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="..\packages\Serilog.4.3.0\build\Serilog.targets" Condition="Exists('..\packages\Serilog.4.3.0\build\Serilog.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Serilog.4.3.0\build\Serilog.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Serilog.4.3.0\build\Serilog.targets'))" />
+  </Target>
+</Project>
