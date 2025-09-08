@@ -36,7 +36,8 @@
             this.btnToggleApi = new System.Windows.Forms.Button();
             this.btnMinimizeToTray = new System.Windows.Forms.Button();
             this.pnlNotifications = new System.Windows.Forms.Panel();
-            this.btnClearNotifications = new System.Windows.Forms.Button();
+            this.btnClose = new System.Windows.Forms.Button();
+            this.btnRestart = new System.Windows.Forms.Button();
             this.pnlHeader.SuspendLayout();
             this.pnlMain.SuspendLayout();
             this.pnlNotifications.SuspendLayout();
@@ -116,10 +117,10 @@
             this.btnMinimizeToTray.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnMinimizeToTray.Font = new System.Drawing.Font("Segoe UI", 9F);
             this.btnMinimizeToTray.ForeColor = System.Drawing.Color.White;
-            this.btnMinimizeToTray.Location = new System.Drawing.Point(506, 143);
+            this.btnMinimizeToTray.Location = new System.Drawing.Point(549, 143);
             this.btnMinimizeToTray.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnMinimizeToTray.Name = "btnMinimizeToTray";
-            this.btnMinimizeToTray.Size = new System.Drawing.Size(210, 62);
+            this.btnMinimizeToTray.Size = new System.Drawing.Size(167, 62);
             this.btnMinimizeToTray.TabIndex = 2;
             this.btnMinimizeToTray.Text = "Gizle";
             this.btnMinimizeToTray.UseVisualStyleBackColor = false;
@@ -128,7 +129,8 @@
             // pnlNotifications
             // 
             this.pnlNotifications.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(30)))), ((int)(((byte)(30)))), ((int)(((byte)(30)))));
-            this.pnlNotifications.Controls.Add(this.btnClearNotifications);
+            this.pnlNotifications.Controls.Add(this.btnRestart);
+            this.pnlNotifications.Controls.Add(this.btnClose);
             this.pnlNotifications.Controls.Add(this.btnMinimizeToTray);
             this.pnlNotifications.Dock = System.Windows.Forms.DockStyle.Fill;
             this.pnlNotifications.Location = new System.Drawing.Point(0, 222);
@@ -138,23 +140,41 @@
             this.pnlNotifications.Size = new System.Drawing.Size(750, 240);
             this.pnlNotifications.TabIndex = 2;
             // 
-            // btnClearNotifications
+            // btnClose
             // 
-            this.btnClearNotifications.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.btnClearNotifications.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(196)))), ((int)(((byte)(43)))), ((int)(((byte)(28)))));
-            this.btnClearNotifications.FlatAppearance.BorderSize = 0;
-            this.btnClearNotifications.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
-            this.btnClearNotifications.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnClearNotifications.Font = new System.Drawing.Font("Segoe UI", 9F);
-            this.btnClearNotifications.ForeColor = System.Drawing.Color.White;
-            this.btnClearNotifications.Location = new System.Drawing.Point(30, 143);
-            this.btnClearNotifications.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
-            this.btnClearNotifications.Name = "btnClearNotifications";
-            this.btnClearNotifications.Size = new System.Drawing.Size(210, 62);
-            this.btnClearNotifications.TabIndex = 2;
-            this.btnClearNotifications.Text = "Programı Kapat";
-            this.btnClearNotifications.UseVisualStyleBackColor = false;
-            this.btnClearNotifications.Click += new System.EventHandler(this.button1_Click);
+            this.btnClose.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnClose.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(196)))), ((int)(((byte)(43)))), ((int)(((byte)(28)))));
+            this.btnClose.FlatAppearance.BorderSize = 0;
+            this.btnClose.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            this.btnClose.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnClose.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnClose.ForeColor = System.Drawing.Color.White;
+            this.btnClose.Location = new System.Drawing.Point(30, 143);
+            this.btnClose.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.btnClose.Name = "btnClose";
+            this.btnClose.Size = new System.Drawing.Size(181, 62);
+            this.btnClose.TabIndex = 2;
+            this.btnClose.Text = "Programı Kapat";
+            this.btnClose.UseVisualStyleBackColor = false;
+            this.btnClose.Click += new System.EventHandler(this.btnClose_Click);
+            // 
+            // btnRestart
+            // 
+            this.btnRestart.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
+            this.btnRestart.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(196)))), ((int)(((byte)(43)))), ((int)(((byte)(28)))));
+            this.btnRestart.FlatAppearance.BorderSize = 0;
+            this.btnRestart.FlatAppearance.MouseOverBackColor = System.Drawing.Color.FromArgb(((int)(((byte)(231)))), ((int)(((byte)(76)))), ((int)(((byte)(60)))));
+            this.btnRestart.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnRestart.Font = new System.Drawing.Font("Segoe UI", 9F);
+            this.btnRestart.ForeColor = System.Drawing.Color.White;
+            this.btnRestart.Location = new System.Drawing.Point(228, 142);
+            this.btnRestart.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
+            this.btnRestart.Name = "btnRestart";
+            this.btnRestart.Size = new System.Drawing.Size(232, 62);
+            this.btnRestart.TabIndex = 3;
+            this.btnRestart.Text = "Programı Yeniden Başlat";
+            this.btnRestart.UseVisualStyleBackColor = false;
+            this.btnRestart.Click += new System.EventHandler(this.btnRestart_Click);
             // 
             // frmMain
             // 
@@ -193,7 +213,8 @@
         private System.Windows.Forms.Button btnToggleApi;
         private System.Windows.Forms.Button btnMinimizeToTray;
         private System.Windows.Forms.Panel pnlNotifications;
-        private System.Windows.Forms.Button btnClearNotifications;
+        private System.Windows.Forms.Button btnClose;
+        private System.Windows.Forms.Button btnRestart;
     }
 }
 

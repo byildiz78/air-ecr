@@ -1,4 +1,5 @@
 ﻿using Ecr.Module.Forms;
+using Ecr.Module.Statics;
 using System;
 using System.IO;
 using System.Threading;
@@ -18,11 +19,14 @@ namespace Ecr.Host
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
+            // Yakalanamayan hataları yakala
+            GlobalExceptionHandler.Initialize();
+
             var currentPath = Path.GetDirectoryName(AppDomain.CurrentDomain.BaseDirectory);
 
             // Klasör yolundan benzersiz bir Mutex adı oluşturuyoruz
             // Klasör yolundaki karakterleri Mutex adı için güvenli hale getiriyoruz
-            var mutexName = "Global\\InfiniaClient_" + currentPath.GetHashCode().ToString("X");
+            var mutexName = "Global\\AirEcr_" + currentPath.GetHashCode().ToString("X");
 
             var createdNew = false;
 

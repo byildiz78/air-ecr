@@ -2,6 +2,7 @@
 using Microsoft.Owin.Hosting;
 using Serilog;
 using System;
+using System.Configuration;
 using System.Drawing;
 using System.Windows.Forms;
 
@@ -13,12 +14,18 @@ namespace Ecr.Module.Forms
         private bool _apiRunning = false;
         private NotifyIcon _trayIcon;
         private ContextMenuStrip _trayMenu;
-        private const string BaseAddress = "http://localhost:9000/";
+        private string _baseAddress = "http://localhost:{0}/";
+        private int _port;
         private ILogger _logger;
 
         public frmMain()
         {
             _logger = AppStatics.GetLogger();
+            var port = ConfigurationManager.AppSettings["Ecr.Port"];
+
+            int.TryParse(port, out _port);
+            if (_port == 0)
+                _port = 9000;
 
             InitializeComponent();
             InitializeTrayIcon();
@@ -55,8 +62,10 @@ namespace Ecr.Module.Forms
         {
             try
             {
-                _webApp = WebApp.Start<Startup>(url: BaseAddress);
-                _logger.Information("API sunucusu başlatıldı: {BaseAddress}", BaseAddress);
+                _baseAddress = string.Format(_baseAddress, _port);
+
+                _webApp = WebApp.Start<Startup>(url: _baseAddress);
+                _logger.Information("API sunucusu başlatıldı: {BaseAddress}", _baseAddress);
             }
             catch (Exception ex)
             {
@@ -183,7 +192,7 @@ namespace Ecr.Module.Forms
         #endregion
 
 
-        private void button1_Click(object sender, EventArgs e)
+        private void btnClose_Click(object sender, EventArgs e)
         {
             StopApiServer();
             _trayIcon.Visible = false;
@@ -196,6 +205,11 @@ namespace Ecr.Module.Forms
             WindowState = FormWindowState.Minimized;
             ShowInTaskbar = false;
             _trayIcon.Visible = true;
+        }
+
+        private void btnRestart_Click(object sender, EventArgs e)
+        {
+            ApplicationHelper.RestartApplication();
         }
     }
 }
