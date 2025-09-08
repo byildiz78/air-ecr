@@ -16,7 +16,7 @@ namespace Ecr.Module.Services.Ingenico.FiscalLogManager
         Exception = 4,
         Return = 5
     }
-    
+
     public class LogManagerOrder
     {
         private static string _logFolder = $"{System.Windows.Forms.Application.StartupPath}\\CommandBackup\\Waiting";
@@ -248,7 +248,7 @@ namespace Ecr.Module.Services.Ingenico.FiscalLogManager
                             var jsonLine = line.Trim();
 
                             commands = JsonConvert.DeserializeObject<FiscalOrder>(jsonLine);
-                          
+
                         }
                         catch (Exception ex)
                         {
@@ -278,11 +278,11 @@ namespace Ecr.Module.Services.Ingenico.FiscalLogManager
                 // Dosya adlarındaki geçersiz karakterleri temizle
                 string safeOldSourceId = CleanFileName(oldSourceId);
                 string safeNewSourceId = CleanFileName(newSourceId);
-                
+
                 // Path sınıfını kullanarak güvenli dosya yolları oluştur
                 string oldFilePath = Path.Combine(_logFolder, safeOldSourceId + ".txt");
                 string newFilePath = Path.Combine(_logFolder, safeNewSourceId + ".txt");
-                
+
                 if (File.Exists(oldFilePath))
                 {
                     // Eğer hedef dosya zaten varsa, önce onu siliyoruz
@@ -290,7 +290,7 @@ namespace Ecr.Module.Services.Ingenico.FiscalLogManager
                     {
                         File.Delete(newFilePath);
                     }
-                    
+
                     // Dosyayı yeni adıyla yeniden adlandırıyoruz
                     File.Copy(oldFilePath, newFilePath);
                     File.Delete(oldFilePath);
@@ -305,50 +305,50 @@ namespace Ecr.Module.Services.Ingenico.FiscalLogManager
                 return false;
             }
         }
-        
+
         private static string CleanFileName(string fileName)
         {
             if (string.IsNullOrEmpty(fileName))
                 return "unknown";
-                
+
             // Dosya adında kullanılamayacak karakterleri temizle
             string invalidChars = Regex.Escape(new string(Path.GetInvalidFileNameChars()));
             string invalidRegStr = string.Format(@"[{0}]+", invalidChars);
-            
+
             // Geçersiz karakterleri alt çizgi ile değiştir
             string safeName = Regex.Replace(fileName, invalidRegStr, "_");
-            
+
             // Dosya adı uzunluğunu sınırla (isteğe bağlı)
             if (safeName.Length > 100)
                 safeName = safeName.Substring(0, 100);
-                
+
             return safeName;
         }
         public static List<string> ListWaitingLogs(string excludeFileName)
         {
             List<string> logFiles = new List<string>();
-            
+
             try
             {
                 // Waiting klasörü var mı kontrol et
                 if (!Directory.Exists(_logFolder))
                     return logFiles; // Boş liste döndür
-                
+
                 // Klasördeki tüm .txt dosyalarını al
                 string[] files = Directory.GetFiles(_logFolder, "*.txt");
-                
+
                 // Dosya adlarını listeye ekle (uzantısız)
                 foreach (string file in files)
                 {
                     string fileName = Path.GetFileNameWithoutExtension(file);
-                    
+
                     // Filtreleme yap
                     if (string.IsNullOrEmpty(excludeFileName) || !fileName.Equals(excludeFileName, StringComparison.OrdinalIgnoreCase))
                     {
                         logFiles.Add(fileName);
                     }
                 }
-                
+
                 return logFiles;
             }
             catch (Exception ex)
@@ -358,19 +358,15 @@ namespace Ecr.Module.Services.Ingenico.FiscalLogManager
                 return logFiles; // Boş veya kısmi doldurulmuş liste döndür
             }
         }
-     
+
         public static bool MoveLogFile(string sourceId, LogFolderType folderType)
         {
             try
             {
-                // Dosya adını temizle
                 string safeSourceId = CleanFileName(sourceId);
-                
-                // Kaynak dosya yolu
                 string sourceFilePath = Path.Combine(_logFolder, safeSourceId + ".txt");
 
-                // Hedef klasör yolunu belirle
-                string targetFolder = "";
+                string targetFolder;
                 switch (folderType)
                 {
                     case LogFolderType.Waiting:
@@ -393,30 +389,31 @@ namespace Ecr.Module.Services.Ingenico.FiscalLogManager
                         break;
                 }
 
-                // Hedef dosya yolu
-                string targetFilePath = Path.Combine(targetFolder, safeSourceId + ".txt");
-                
-                // Kaynak dosya var mı kontrol et
                 if (!File.Exists(sourceFilePath))
                     return false;
-                
-                // Hedef klasör yoksa oluştur
+
                 if (!Directory.Exists(targetFolder))
                     Directory.CreateDirectory(targetFolder);
-                
-                // Hedef dosya zaten varsa sil
-                if (File.Exists(targetFilePath))
-                    File.Delete(targetFilePath);
-                
-                // Dosyayı taşı (kopyala ve sil)
+
+                // İlk hedef dosya yolu
+                string targetFilePath = Path.Combine(targetFolder, safeSourceId + ".txt");
+
+                // Eğer hedef dosya varsa sonuna _yeni ekle
+                int counter = 1;
+                while (File.Exists(targetFilePath))
+                {
+                    string newFileName = $"{safeSourceId}_yeni{(counter > 1 ? counter.ToString() : "")}.txt";
+                    targetFilePath = Path.Combine(targetFolder, newFileName);
+                    counter++;
+                }
+
                 File.Copy(sourceFilePath, targetFilePath);
                 File.Delete(sourceFilePath);
-                
+
                 return true;
             }
             catch (Exception ex)
             {
-                // Hata durumunda exception logla
                 Exception(ex, "MoveLogFile", sourceId);
                 return false;
             }
