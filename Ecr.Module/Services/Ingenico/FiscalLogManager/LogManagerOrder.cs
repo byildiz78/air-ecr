@@ -165,6 +165,51 @@ namespace Ecr.Module.Services.Ingenico.FiscalLogManager
             return commands;
         }
 
+        public static List<GmpCommand> GetOrderFileComplated(string sourceId)
+        {
+            var commands = new List<GmpCommand>();
+
+            try
+            {
+
+                if (File.Exists($"{_logFolderCompleted}\\{sourceId}.txt"))
+                {
+                    var lines = File.ReadAllLines($"{_logFolderCompleted}\\{sourceId}.txt");
+                    foreach (var line in lines)
+                    {
+                        if (string.IsNullOrWhiteSpace(line)) continue;
+
+                        try
+                        {
+                            var jsonLine = line.Trim();
+
+                            var command = JsonConvert.DeserializeObject<GmpCommand>(jsonLine);
+                            if (command != null)
+                            {
+                                commands.Add(command);
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            return commands;
+                        }
+
+                    }
+                }
+
+
+
+
+
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                return commands;
+            }
+
+            return commands;
+        }
+
         public static List<string> GetLogFileNames()
         {
             try
@@ -407,8 +452,7 @@ namespace Ecr.Module.Services.Ingenico.FiscalLogManager
                     counter++;
                 }
 
-                File.Copy(sourceFilePath, targetFilePath);
-                File.Delete(sourceFilePath);
+                File.Move(sourceFilePath, targetFilePath);
 
                 return true;
             }

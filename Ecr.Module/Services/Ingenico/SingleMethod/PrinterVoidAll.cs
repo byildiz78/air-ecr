@@ -51,11 +51,11 @@ namespace Ecr.Module.Services.Ingenico.SingleMethod
 
                 if (printResult.TicketInfo.FNo == 0)
                 {
-                   // LogManager.Append($"EftPosVoidPrintOrder.STEP2.EftPosGetTicket yazdırılan fişin bilgileri alınacak", "EftPosVoidPrintOrder");
+                    // LogManager.Append($"EftPosVoidPrintOrder.STEP2.EftPosGetTicket yazdırılan fişin bilgileri alınacak", "EftPosVoidPrintOrder");
                     GmpPrintReceiptDto lastTicketResult = SingleFunctions.EftPosGetTicket();
                     if (lastTicketResult.ReturnCode != Defines.TRAN_RESULT_OK)
                     {
-                     //   LogManager.Append($"EftPosVoidPrintOrder.STEP2.EftPosGetTicket metodunda hata oluştu.{ErrorClass.DisplayErrorCodeMessage((uint)lastTicketResult.ReturnCode)}", "EftPosVoidPrintOrder");
+                        //   LogManager.Append($"EftPosVoidPrintOrder.STEP2.EftPosGetTicket metodunda hata oluştu.{ErrorClass.DisplayErrorCodeMessage((uint)lastTicketResult.ReturnCode)}", "EftPosVoidPrintOrder");
                     }
                     if (lastTicketResult.TicketInfo?.FNo > 0)
                     {
@@ -103,9 +103,45 @@ namespace Ecr.Module.Services.Ingenico.SingleMethod
 
             try
             {
+                var waitingList = LogManagerOrder.GetOrderFile(order.OrderKey.Value.ToString());
+                if (waitingList.Count != 0)
+                {
+                    if (waitingList.Where(x => x.Command == "prepare_Payment" && x.ReturnValue == "TRAN_RESULT_OK [0]").Any())
+                    {
+                        printResult.Status = false;
+                        printResult.ErrorCode = "9999";
+                        printResult.Message = "ÖDEMESİ ALINMIŞ OLAN ÇEK İPTAL EDİLEMEZ!";
+                        printResult.Data = new GmpPrintReceiptDto();
+                        return printResult;
+                    }
+                }
+                var CompletedList = LogManagerOrder.GetOrderFileComplated(order.OrderKey.Value.ToString());
+                if (CompletedList.Count != 0)
+                {
+                    if (waitingList.Where(x => x.Command == "prepare_Payment" && x.ReturnValue == "TRAN_RESULT_OK [0]").Any())
+                    {
+                        printResult.Status = false;
+                        printResult.ErrorCode = "9999";
+                        printResult.Message = "ÖDEMESİ ALINMIŞ OLAN ÇEK İPTAL EDİLEMEZ!";
+                        printResult.Data = new GmpPrintReceiptDto();
+                        return printResult;
+                    }
+                }
                 var logName = $"iptal_{order.OrderKey}_{DateTime.Now.Day}:{DateTime.Now.Month}:{DateTime.Now.Second}";
                 LogManagerOrder.RenameLog(order.OrderKey.ToString(), logName);
-                LogManagerOrder.MoveLogFile(logName,LogFolderType.Cancel);
+                LogManagerOrder.MoveLogFile(logName, LogFolderType.Cancel);
+
+
+                var logNameFiscal = $"iptal_{order.OrderKey}_{DateTime.Now.Day}:{DateTime.Now.Month}:{DateTime.Now.Second}_Fiscal";
+                LogManagerOrder.RenameLog($"{ order.OrderKey.ToString()}_Fiscal", logNameFiscal);
+                LogManagerOrder.MoveLogFile(logNameFiscal, LogFolderType.Cancel);
+
+
+                var logNameData = $"iptal_{order.OrderKey}_{DateTime.Now.Day}:{DateTime.Now.Month}:{DateTime.Now.Second}_Data";
+                LogManagerOrder.RenameLog($"{order.OrderKey.ToString()}_Data", logNameData);
+                LogManagerOrder.MoveLogFile(logNameData, LogFolderType.Cancel);
+
+
                 #region STEP 1 : Referans numarası üret
 
                 printResult.Data = ReferenceNumber.EftPosReferenceNumber(order);
@@ -124,7 +160,7 @@ namespace Ecr.Module.Services.Ingenico.SingleMethod
                 #region STEP 2 : Yazarkasadan yazdırılacak komutlar oluşturuluyor
 
                 //LogManager.Append($"EftPosVoidPrintOrder.STEP2.EftPosVoidGmpBatchCommand iptal komutları oluşturulacak", "printFiscal -> EftPosVoidPrintOrder");
-                List<GmpCommand> CommandList =  SingleFunctions.EftPosVoidGmpBatchCommand(order);
+                List<GmpCommand> CommandList = SingleFunctions.EftPosVoidGmpBatchCommand(order);
 
                 #endregion
 

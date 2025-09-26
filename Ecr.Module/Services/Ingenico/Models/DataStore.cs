@@ -17,5 +17,7 @@ namespace Ecr.Module.Services.Ingenico.Models
         public static string gmpxml = "";
         public static string gmpini = "";
 
+        public static string CashRegisterStatus = "";
+
     }
 }

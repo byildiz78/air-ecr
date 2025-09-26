@@ -68,6 +68,16 @@ namespace Ecr.Module.Controllers
         }
 
         [HttpGet]
+        [Route("CashRegisterStatus")]
+        public string CashRegisterStatus()
+        {
+            _logger.Information("API isteği alındı: GET /ingenico/Completed");
+            ShowNotification("API İsteği Alındı", "GET /ingenico/Completed");
+            var result = DataStore.CashRegisterStatus;
+            return result;
+        }
+
+        [HttpGet]
         [Route("IsCompleted/{orderKey}")]
         public IngenicoApiResponse<GmpPrintReceiptDto> IsCompleted(string orderKey)
         {
@@ -76,8 +86,6 @@ namespace Ecr.Module.Controllers
             var response = PrintReceiptGmpProvider.EftPrintIsCompleted(orderKey);
             return response;
         }
-
-        
 
         [HttpGet]
         [Route("GetFiscal/{orderKey}")]
@@ -200,7 +208,7 @@ namespace Ecr.Module.Controllers
             {
                 var gmpBankList = new BankList();
                 response = gmpBankList.GetBankList();
-               
+
             }
             catch (Exception ex)
             {
@@ -351,7 +359,7 @@ namespace Ecr.Module.Controllers
                 if (DataStore.Connection != ConnectionStatus.Connected)
                 {
                     var gmpPair = new PairingGmpProvider();
-                   var pairingResponse = gmpPair.pairingControl();
+                    var pairingResponse = gmpPair.pairingControl();
                     if (!pairingResponse.Status)
                     {
                         response.Message = pairingResponse.Message;
@@ -360,7 +368,7 @@ namespace Ecr.Module.Controllers
                         return response;
                     }
                 }
-                var fiscaltype =  FiscalOrderType.GetFiscalOrderType(fiscalOrder);
+                var fiscaltype = FiscalOrderType.GetFiscalOrderType(fiscalOrder);
                 switch (fiscaltype)
                 {
                     case FiscalType.Normal:
@@ -368,8 +376,9 @@ namespace Ecr.Module.Controllers
                             #region STEP 5 : Normal Fiş Yazımı (İlk fiş yazımı - Yarım kalan fişin yazımını devamı)
 
                             retry:
+                            DataStore.CashRegisterStatus = "YAZARKASA İŞLEME BAŞLIYOR";
                             response = PrintReceiptGmpProvider.EftPosPrintOrder(fiscalOrder);
-
+                            DataStore.CashRegisterStatus = "YAZARKASA BOŞTA";
                             if (response.Data.ReturnStringMessage == "YAZARKASA GEÇERSİZ SIRA NUMARASI" || response.Data.ReturnCode == 2346)
                             {
                                 DataStore.Connection = ConnectionStatus.NotConnected;
@@ -387,7 +396,7 @@ namespace Ecr.Module.Controllers
                                     goto retry;
                                 }
                             }
-                            
+
                             break;
 
                             #endregion
@@ -396,8 +405,8 @@ namespace Ecr.Module.Controllers
                         {
                             #region STEP 6 : İade Fişi (Nakit , Kredi, Nakit + Kredi)
 
-                             response = PrintReceiptReturnMode.ReturnPrintOrder(fiscalOrder);
-                             break;
+                            response = PrintReceiptReturnMode.ReturnPrintOrder(fiscalOrder);
+                            break;
 
                             #endregion
                         }
@@ -413,7 +422,7 @@ namespace Ecr.Module.Controllers
                         }
                 }
 
-               
+
                 response.Status = response.Data.ReturnCode == Defines.TRAN_RESULT_OK ? true : false;
             }
             catch (Exception ex)

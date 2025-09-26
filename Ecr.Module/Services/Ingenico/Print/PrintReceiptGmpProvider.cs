@@ -15,11 +15,9 @@ namespace Ecr.Module.Services.Ingenico.Print
         {
             printRetry:
 
-            if (!LogManagerOrder.GetOrderFile(order.OrderKey.Value.ToString() + "_Fiscal").Any())
-            {
-                var fiscal = Newtonsoft.Json.JsonConvert.SerializeObject(order);
-                LogManagerOrder.SaveOrder(fiscal, "", order.OrderKey.Value.ToString() + "_Fiscal");
-            }
+            var fiscal = Newtonsoft.Json.JsonConvert.SerializeObject(order);
+            LogManagerOrder.SaveOrder(fiscal, "", order.OrderKey.Value.ToString() + "_Fiscal");
+
             var printResult = new IngenicoApiResponse<GmpPrintReceiptDto>();
             bool tryAgain = false;
             var tryCommandList = LogManagerOrder.GetOrderFile(order.OrderKey.Value.ToString());
@@ -105,9 +103,6 @@ namespace Ecr.Module.Services.Ingenico.Print
                     tryCommandList = new List<GmpCommand>();
                 }
 
-
-                //Yar�m kalan fi�e devam et Yazd�r
-                // printResult = printReceiptGmpProvider.EftPosAgainPrintOrder(order);
             }
 
             if (tryCommandList.Count != 0)
@@ -164,8 +159,58 @@ namespace Ecr.Module.Services.Ingenico.Print
             }
 
 
-            #region STEP 1 : Referans numaras� �ret
+            //var waitingList = LogManagerOrder.GetOrderFile(order.OrderKey.Value.ToString());
+            //if (waitingList.Count != 0)
+            //{
+            //    if (waitingList.Where(x => x.Command == "prepare_Payment" && x.ReturnValue == "TRAN_RESULT_OK [0]").Any())
+            //    {
+            //        GmpPrintReceiptDto closeResult = PrinterClose.EftPosReceiptClose();
 
+            //        if (closeResult.ReturnCode == Defines.TRAN_RESULT_NOT_ALLOWED)
+            //        {
+            //            closeResult = PrinterClose.EftPosReceiptFreeCloseAll();
+            //        }
+            //        printResult.Status = true;
+            //        printResult.ErrorCode = "0";
+            //        printResult.Message = "ÖDEME DAHA ÖNCE ALINMIŞ VE BAŞARILI İLE KAPANMIŞ";
+            //        printResult.Data = new GmpPrintReceiptDto();
+
+            //        var printDetails = LogManagerOrder.GetOrderFileData(order.OrderKey.Value.ToString() + "_Data");
+            //        if (printDetails.Any())
+            //        {
+            //            printResult.Data = printDetails.FirstOrDefault();
+            //        }
+            //        return printResult;
+            //    }
+            //}
+            //var CompletedList = LogManagerOrder.GetOrderFileComplated(order.OrderKey.Value.ToString());
+            //if (CompletedList.Count != 0)
+            //{
+            //    if (waitingList.Where(x => x.Command == "prepare_Payment" && x.ReturnValue == "TRAN_RESULT_OK [0]").Any())
+            //    {
+            //        GmpPrintReceiptDto closeResult = PrinterClose.EftPosReceiptClose();
+
+            //        if (closeResult.ReturnCode == Defines.TRAN_RESULT_NOT_ALLOWED)
+            //        {
+            //            closeResult = PrinterClose.EftPosReceiptFreeCloseAll();
+            //        }
+            //        printResult.Status = true;
+            //        printResult.ErrorCode = "0";
+            //        printResult.Message = "ÖDEME DAHA ÖNCE ALINMIŞ VE BAŞARILI İLE KAPANMIŞ";
+            //        printResult.Data = new GmpPrintReceiptDto();
+
+            //        var printDetails = LogManagerOrder.GetOrderFileData(order.OrderKey.Value.ToString() + "_Data");
+            //        if (printDetails.Any())
+            //        {
+            //            printResult.Data = printDetails.FirstOrDefault();
+            //        }
+            //        return printResult;
+            //    }
+            //}
+
+
+            #region STEP 1 : Referans numaras� �ret
+            DataStore.CashRegisterStatus = "REFERANS NUMARASI ÜRETİLİYOR";
             printResult.Data = ReferenceNumber.EftPosReferenceNumber(order, tryAgain, printResult.Data);
             // LogManager.Append($"STEP 1 : Referans numaras� �ret : {Newtonsoft.Json.JsonConvert.SerializeObject(printResult)}", "EftPosReferenceNumber");
 
@@ -202,7 +247,7 @@ namespace Ecr.Module.Services.Ingenico.Print
             }
 
             #endregion
-
+            DataStore.CashRegisterStatus = "ÜRÜNLER YAZDIRILIYOR";
             #region STEP 4 : Olu�turulan komutlar� �al��t�r..
             List<BatchCommandResultDto> batchCommandResult = new List<BatchCommandResultDto>();
             if (gmpCommandList.Any() && gmpCommandList.Count > 0)
@@ -244,24 +289,25 @@ namespace Ecr.Module.Services.Ingenico.Print
             #endregion
 
             #region Single Mode ��lemler
-
+            DataStore.CashRegisterStatus = "ÖDEME BEKLENİYOR";
             printResult = SinglePayment.singleModePayment(order, tryCommandList, printResult);
             if (printResult.Data.ReturnCode != Defines.TRAN_RESULT_OK)
             {
                 return printResult;
             }
-
+            DataStore.CashRegisterStatus = "ARA TOPLAM YAPILIYOR";
             printResult = SinglePayment.totalsAndPayment(order, tryCommandList, printResult);
             if (printResult.Data.ReturnCode != Defines.TRAN_RESULT_OK)
             {
                 return printResult;
             }
+            DataStore.CashRegisterStatus = "EKÜ İŞLEMLERİ YAPILIYOR";
             printResult = MF.PrintBeforePayment(tryCommandList, order, printResult);
             if (printResult.Data.ReturnCode != Defines.TRAN_RESULT_OK)
             {
                 return printResult;
             }
-
+            DataStore.CashRegisterStatus = "FİŞ ALTI MESAJLAR YAZDIRILIYOR";
             printResult = PrintUserMessage.PrintMessage(order, tryCommandList, printResult, commandCount);
             if (printResult.Data.ReturnCode != Defines.TRAN_RESULT_OK)
             {
@@ -277,7 +323,7 @@ namespace Ecr.Module.Services.Ingenico.Print
             #region STEP 6 : Yazarkasadan fi�in bilgisini al
 
             // LogManager.Append($"STEP6 -> EftPosGetTicket yazd�r�lan fi�in bilgileri al�nacak", "EftPosPrintOrder");
-
+            DataStore.CashRegisterStatus = "FİŞ BİLGİSİ ALINIYOR";
             GmpPrintReceiptDto lastTicketResult = SingleFunctions.EftPosTicket();
             if (lastTicketResult.ReturnCode != Defines.TRAN_RESULT_OK)
             {
@@ -303,8 +349,7 @@ namespace Ecr.Module.Services.Ingenico.Print
 
             #region STEP 7 : Fi�i Kapat
 
-
-
+            DataStore.CashRegisterStatus = "FİŞ KAPATILIYOR";
             var subCommand = new GmpCommand();
             subCommand.OrderID = (int)order.OrderID.Value;
             subCommand.OrderKey = order.OrderKey.Value;
@@ -334,11 +379,6 @@ namespace Ecr.Module.Services.Ingenico.Print
             //LogManager.Append($"Metodu tamamland�...Fi� Yaz�m� : {(printResult.Data.ReturnCode == Defines.TRAN_RESULT_OK ? "BA�ARILI oldu.." : $"BA�ARISIZ oldu..ReturnCode : {printResult.ReturnCode} , ReturnMessage : {printResult.ReturnCodeMessage}")} printResult : {Newtonsoft.Json.JsonConvert.SerializeObject(printResult)} ", "EftPosPrintOrder");
 
             #endregion
-
-            //if (printResult.Data.ReturnCode == Defines.TRAN_RESULT_OK)
-            //{
-            //   LogManagerOrder.MoveLogFile(order.OrderKey.ToString(),LogFolderType.Completed);
-            //}
 
             return printResult;
         }
