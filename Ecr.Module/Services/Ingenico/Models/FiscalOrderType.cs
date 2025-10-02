@@ -4,21 +4,16 @@
     {
         public static FiscalType GetFiscalOrderType(FiscalOrder order)
         {
-            FiscalType fiscalType = FiscalType.Normal;
-
             if (order.IsReturnMode.Value)
             {
-                fiscalType = FiscalType.Return;
+                return FiscalType.Return;
             }
             else if (order.IsVoidedFiscal.Value)
             {
-                fiscalType = FiscalType.Void;
+                return FiscalType.Void;
             }
-            else
-            {
-                fiscalType = FiscalType.Normal;
-            }
-            return fiscalType;
+
+            return FiscalType.Normal;
         }
     }
 }

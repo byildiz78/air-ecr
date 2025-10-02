@@ -2,7 +2,9 @@ using Ecr.Module.Services.Ingenico.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -99,9 +101,49 @@ namespace Ecr.Module.Services.Ingenico.FiscalLogManager
 
         public static void SaveOrder(string orderData, string fileName, string sourceId)
         {
+            if (DataStore._logRarLastEngineDate < DateTime.Now.Date)
+            {
+                ArchiveOldLogs();
+                DataStore._logRarLastEngineDate = DateTime.Now.Date;
+            }
+
             var subFolderName = $"{sourceId}";
 
             Save(orderData, sourceId, subFolderName: subFolderName, fileName: fileName, prependLogDate: false);
+        }
+        public static void ArchiveOldLogs()
+        {
+            var folders = new[]
+            {
+                _logFolder,
+                _logFolderCompleted,
+                _logFolderCancel,
+                _logFolderException,
+                _logFolderReturn
+            };
+
+            var today = DateTime.Today;
+            var archiveDate = today.ToString("yyyy-MM-dd");
+
+            foreach (var folder in folders)
+            {
+                if (!Directory.Exists(folder))
+                    continue;
+
+                var files = Directory.GetFiles(folder, "*.txt");
+                var oldFiles = new List<string>();
+
+                if (files.Any())
+                {
+                    oldFiles = files.Where(x => File.GetLastWriteTime(x).Date < today).ToList();
+
+                }
+                if (oldFiles.Count == 0)
+                    continue;
+
+                
+                
+            }
         }
 
         public static void Exception(Exception ex, string commandName, string sourceId)
@@ -401,6 +443,78 @@ namespace Ecr.Module.Services.Ingenico.FiscalLogManager
                 // Hata durumunda exception logla
                 Exception(ex, "ListWaitingLogs", "system");
                 return logFiles; // Boş veya kısmi doldurulmuş liste döndür
+            }
+        }
+
+        /// <summary>
+        /// Waiting klasöründeki 2 dosyayı (Commands ve Fiscal) hedef klasöre taşır
+        /// Eğer hedef dosya varsa, mevcut dosyayı _old yaparak yedekler
+        /// </summary>
+        public static bool MoveOrderFilesToCompleted(string sourceId)
+        {
+            try
+            {
+                string safeSourceId = CleanFileName(sourceId);
+                string targetFolder = _logFolderCompleted;
+
+                if (!Directory.Exists(targetFolder))
+                    Directory.CreateDirectory(targetFolder);
+
+                bool success = true;
+
+                // 1. {OrderKey}.txt (Commands) dosyasını taşı
+                string commandsSource = Path.Combine(_logFolder, safeSourceId + ".txt");
+                if (File.Exists(commandsSource))
+                {
+                    string commandsTarget = Path.Combine(targetFolder, safeSourceId + ".txt");
+
+                    // Eğer hedef dosya varsa _old yap
+                    if (File.Exists(commandsTarget))
+                    {
+                        string oldFile = Path.Combine(targetFolder, safeSourceId + "_old.txt");
+                        if (File.Exists(oldFile))
+                            File.Delete(oldFile);
+                        File.Move(commandsTarget, oldFile);
+                    }
+
+                    File.Move(commandsSource, commandsTarget);
+                }
+                else
+                {
+                    success = false;
+                }
+
+                // 2. {OrderKey}_Fiscal.txt dosyasını taşı
+                string fiscalSource = Path.Combine(_logFolder, safeSourceId + "_Fiscal.txt");
+                if (File.Exists(fiscalSource))
+                {
+                    string fiscalTarget = Path.Combine(targetFolder, safeSourceId + "_Fiscal.txt");
+
+                    // Eğer hedef dosya varsa _old yap
+                    if (File.Exists(fiscalTarget))
+                    {
+                        string oldFile = Path.Combine(targetFolder, safeSourceId + "_Fiscal_old.txt");
+                        if (File.Exists(oldFile))
+                            File.Delete(oldFile);
+                        File.Move(fiscalTarget, oldFile);
+                    }
+
+                    File.Move(fiscalSource, fiscalTarget);
+                }
+
+                // 3. _Data.txt dosyası varsa sil (taşınmaz)
+                string dataSource = Path.Combine(_logFolder, safeSourceId + "_Data.txt");
+                if (File.Exists(dataSource))
+                {
+                    File.Delete(dataSource);
+                }
+
+                return success;
+            }
+            catch (Exception ex)
+            {
+                Exception(ex, "MoveOrderFilesToCompleted", sourceId);
+                return false;
             }
         }
 

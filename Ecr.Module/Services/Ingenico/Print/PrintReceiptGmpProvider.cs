@@ -3,6 +3,7 @@ using Ecr.Module.Services.Ingenico.GmpIngenico;
 using Ecr.Module.Services.Ingenico.Helper;
 using Ecr.Module.Services.Ingenico.Models;
 using Ecr.Module.Services.Ingenico.SingleMethod;
+using Ecr.Module.Services.Ingenico.Transaction;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,12 +12,19 @@ namespace Ecr.Module.Services.Ingenico.Print
 {
     public static class PrintReceiptGmpProvider
     {
+        // Phase 2.2: Transaction State Tracker
+        // SAFE: Optional enhancement, wrapped in try-catch
+        private static readonly TransactionStateTracker _tracker = new TransactionStateTracker();
         public static IngenicoApiResponse<GmpPrintReceiptDto> EftPosPrintOrder(FiscalOrder order, int commandCount = 15)
         {
             printRetry:
 
             var fiscal = Newtonsoft.Json.JsonConvert.SerializeObject(order);
             LogManagerOrder.SaveOrder(fiscal, "", order.OrderKey.Value.ToString() + "_Fiscal");
+
+            // Phase 2.2: Save transaction state alongside order data
+            // SAFE: Wrapped in try-catch, doesn't break existing flow
+            TrySaveTransactionState(order.OrderKey.Value.ToString());
 
             var printResult = new IngenicoApiResponse<GmpPrintReceiptDto>();
             bool tryAgain = false;
@@ -157,57 +165,6 @@ namespace Ecr.Module.Services.Ingenico.Print
                 }
                 return printResult;
             }
-
-
-            //var waitingList = LogManagerOrder.GetOrderFile(order.OrderKey.Value.ToString());
-            //if (waitingList.Count != 0)
-            //{
-            //    if (waitingList.Where(x => x.Command == "prepare_Payment" && x.ReturnValue == "TRAN_RESULT_OK [0]").Any())
-            //    {
-            //        GmpPrintReceiptDto closeResult = PrinterClose.EftPosReceiptClose();
-
-            //        if (closeResult.ReturnCode == Defines.TRAN_RESULT_NOT_ALLOWED)
-            //        {
-            //            closeResult = PrinterClose.EftPosReceiptFreeCloseAll();
-            //        }
-            //        printResult.Status = true;
-            //        printResult.ErrorCode = "0";
-            //        printResult.Message = "ÖDEME DAHA ÖNCE ALINMIŞ VE BAŞARILI İLE KAPANMIŞ";
-            //        printResult.Data = new GmpPrintReceiptDto();
-
-            //        var printDetails = LogManagerOrder.GetOrderFileData(order.OrderKey.Value.ToString() + "_Data");
-            //        if (printDetails.Any())
-            //        {
-            //            printResult.Data = printDetails.FirstOrDefault();
-            //        }
-            //        return printResult;
-            //    }
-            //}
-            //var CompletedList = LogManagerOrder.GetOrderFileComplated(order.OrderKey.Value.ToString());
-            //if (CompletedList.Count != 0)
-            //{
-            //    if (waitingList.Where(x => x.Command == "prepare_Payment" && x.ReturnValue == "TRAN_RESULT_OK [0]").Any())
-            //    {
-            //        GmpPrintReceiptDto closeResult = PrinterClose.EftPosReceiptClose();
-
-            //        if (closeResult.ReturnCode == Defines.TRAN_RESULT_NOT_ALLOWED)
-            //        {
-            //            closeResult = PrinterClose.EftPosReceiptFreeCloseAll();
-            //        }
-            //        printResult.Status = true;
-            //        printResult.ErrorCode = "0";
-            //        printResult.Message = "ÖDEME DAHA ÖNCE ALINMIŞ VE BAŞARILI İLE KAPANMIŞ";
-            //        printResult.Data = new GmpPrintReceiptDto();
-
-            //        var printDetails = LogManagerOrder.GetOrderFileData(order.OrderKey.Value.ToString() + "_Data");
-            //        if (printDetails.Any())
-            //        {
-            //            printResult.Data = printDetails.FirstOrDefault();
-            //        }
-            //        return printResult;
-            //    }
-            //}
-
 
             #region STEP 1 : Referans numaras� �ret
             DataStore.CashRegisterStatus = "REFERANS NUMARASI ÜRETİLİYOR";
@@ -358,6 +315,14 @@ namespace Ecr.Module.Services.Ingenico.Print
             subCommand.Command = "FP3_CloseFiscal";
             subCommand.ReturnCode = (int)0;
             subCommand.ReturnValue = "TRAN_RESULT_OK [0]";
+
+            // TicketInfo'yu ekle (eğer varsa)
+            if (printResult.Data != null && printResult.Data.TicketInfo != null && printResult.Data.TicketInfo.FNo > 0)
+            {
+                subCommand.printDetail = new GmpPrintReceiptDto();
+                subCommand.printDetail.TicketInfo = printResult.Data.TicketInfo;
+            }
+
             var js = Newtonsoft.Json.JsonConvert.SerializeObject(subCommand);
             LogManagerOrder.SaveOrder(js, "", order.OrderKey.Value.ToString());
 
@@ -374,6 +339,19 @@ namespace Ecr.Module.Services.Ingenico.Print
                 printResult.Data.ReturnCode = closeResult.ReturnCode;
                 printResult.Data.ReturnCodeMessage = ErrorClass.DisplayErrorCodeMessage(closeResult.ReturnCode);
                 printResult.Data.ReturnStringMessage = ErrorClass.DisplayErrorMessage(closeResult.ReturnCode);
+
+                // Phase 2.2: Transaction completed successfully
+                // Mark transaction as completed and move order file
+                if (closeResult.ReturnCode == Defines.TRAN_RESULT_OK)
+                {
+                    TryCompleteTransaction(order.OrderKey.Value.ToString());
+                }
+            }
+            else
+            {
+                // Phase 2.2: Transaction failed
+                // Mark transaction as exception
+                TryMarkTransactionException(order.OrderKey.Value.ToString());
             }
 
             //LogManager.Append($"Metodu tamamland�...Fi� Yaz�m� : {(printResult.Data.ReturnCode == Defines.TRAN_RESULT_OK ? "BA�ARILI oldu.." : $"BA�ARISIZ oldu..ReturnCode : {printResult.ReturnCode} , ReturnMessage : {printResult.ReturnCodeMessage}")} printResult : {Newtonsoft.Json.JsonConvert.SerializeObject(printResult)} ", "EftPosPrintOrder");
@@ -469,6 +447,96 @@ namespace Ecr.Module.Services.Ingenico.Print
                 printResult.ErrorCode = "999";
             }
             return printResult;
+        }
+
+        /// <summary>
+        /// Phase 2.2: Helper method to save transaction state
+        /// SAFE: Try-catch wrapped, never breaks existing flow
+        /// </summary>
+        private static void TrySaveTransactionState(string orderKey)
+        {
+            try
+            {
+                var transactionManager = TransactionManager.Instance;
+                if (transactionManager.HasActiveTransaction())
+                {
+                    var transaction = transactionManager.GetCurrentTransaction();
+
+                    // Save transaction state using tracker
+                    _tracker.SaveTransactionState();
+
+                    System.Diagnostics.Debug.WriteLine($"[Phase 2.2] Transaction state saved: OrderKey={orderKey}, Handle={transaction.Handle}, State={transaction.State}");
+                }
+            }
+            catch (Exception ex)
+            {
+                // CRITICAL: Never break existing flow
+                // Log error silently and continue
+                System.Diagnostics.Debug.WriteLine($"[Phase 2.2] Failed to save transaction state: {ex.Message}");
+                // Existing flow continues normally
+            }
+        }
+
+        /// <summary>
+        /// Phase 2.2: Helper method to complete transaction with state tracking
+        /// SAFE: Try-catch wrapped, never breaks existing flow
+        /// </summary>
+        private static void TryCompleteTransaction(string orderKey)
+        {
+            try
+            {
+                // Complete transaction and move order file
+                bool success = _tracker.CompleteTransaction(orderKey);
+
+                System.Diagnostics.Debug.WriteLine($"[Phase 2.2] Transaction completed: OrderKey={orderKey}, Success={success}");
+            }
+            catch (Exception ex)
+            {
+                // CRITICAL: Never break existing flow
+                System.Diagnostics.Debug.WriteLine($"[Phase 2.2] Failed to complete transaction: {ex.Message}");
+
+                // Fallback to existing mechanism
+                try
+                {
+                    // Yeni metod: Hem .txt hem _Fiscal.txt dosyasını taşır
+                    // Eğer hedef dosya varsa _old yapılır
+                    LogManagerOrder.MoveOrderFilesToCompleted(orderKey);
+                }
+                catch
+                {
+                    // Silent fail - existing code will handle
+                }
+            }
+        }
+
+        /// <summary>
+        /// Phase 2.2: Helper method to mark transaction as exception
+        /// SAFE: Try-catch wrapped, never breaks existing flow
+        /// </summary>
+        private static void TryMarkTransactionException(string orderKey, Exception exception = null)
+        {
+            try
+            {
+                // Mark transaction as exception and move order file
+                bool success = _tracker.MarkTransactionAsException(orderKey, exception);
+
+                System.Diagnostics.Debug.WriteLine($"[Phase 2.2] Transaction marked as exception: OrderKey={orderKey}, Success={success}");
+            }
+            catch (Exception ex)
+            {
+                // CRITICAL: Never break existing flow
+                System.Diagnostics.Debug.WriteLine($"[Phase 2.2] Failed to mark transaction exception: {ex.Message}");
+
+                // Fallback to existing mechanism
+                try
+                {
+                    LogManagerOrder.MoveLogFile(orderKey, LogFolderType.Exception);
+                }
+                catch
+                {
+                    // Silent fail - existing code will handle
+                }
+            }
         }
     }
 }

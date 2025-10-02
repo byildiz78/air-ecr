@@ -1,3 +1,5 @@
+using System;
+
 namespace Ecr.Module.Services.Ingenico.Models
 {
     public class DataStore
@@ -19,5 +21,6 @@ namespace Ecr.Module.Services.Ingenico.Models
 
         public static string CashRegisterStatus = "";
 
+        public static DateTime _logRarLastEngineDate = DateTime.MinValue.Date;
     }
 }

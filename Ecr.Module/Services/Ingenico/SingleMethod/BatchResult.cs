@@ -38,12 +38,18 @@ namespace Ecr.Module.Services.Ingenico.SingleMethod
                         printResult.ReturnCodeMessage = ErrorClass.DisplayErrorCodeMessage((uint)subCommand.ReturnCode);
                         printResult.ReturnStringMessage = ErrorClass.DisplayErrorMessage((uint)subCommand.ReturnCode);
 
+                        // TicketInfo'yu subCommand'a aktar (eğer dolu ise)
+                        if (mainCommandList.ReceiptInfo.FNo > 0 && subCommand.printDetail != null)
+                        {
+                            subCommand.printDetail.TicketInfo = mainCommandList.ReceiptInfo;
+                        }
+
                         if (printResult.ReturnCode != Defines.TRAN_RESULT_OK)
                         {
                             printResult.GmpCommandInfo.Add(subCommand);
                             var js = Newtonsoft.Json.JsonConvert.SerializeObject(subCommand);
                             LogManagerOrder.SaveOrder(js, "", orderkey);
-                            
+
                         }
                         else
                         {

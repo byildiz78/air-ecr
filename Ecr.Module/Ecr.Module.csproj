@@ -36,6 +36,9 @@
     <Reference Include="Dapper, Version=2.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Dapper.2.1.66\lib\net461\Dapper.dll</HintPath>
     </Reference>
+    <Reference Include="ICSharpCode.SharpZipLib, Version=0.85.4.369, Culture=neutral, PublicKeyToken=1b03e6acf1164f73, processorArchitecture=MSIL">
+      <HintPath>..\packages\ICSharpCode.SharpZipLib.dll.0.85.4.369\lib\net20\ICSharpCode.SharpZipLib.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.AspNetCore.Http.Abstractions, Version=2.3.0.0, Culture=neutral, PublicKeyToken=adb9793829ddae60, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.AspNetCore.Http.Abstractions.2.3.0\lib\netstandard2.0\Microsoft.AspNetCore.Http.Abstractions.dll</HintPath>
     </Reference>
@@ -141,13 +144,37 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\IngenicoService.cs" />
     <Compile Include="Services\Ingenico\BankList\BankList.cs" />
+    <Compile Include="Services\Ingenico\Configuration\ConfigurationManager.cs" />
+    <Compile Include="Services\Ingenico\Configuration\ConfigurationValidator.cs" />
+    <Compile Include="Services\Ingenico\Connection\ConnectionErrorCategory.cs" />
+    <Compile Include="Services\Ingenico\Connection\ConnectionErrorInfo.cs" />
+    <Compile Include="Services\Ingenico\Connection\ConnectionManager.cs" />
+    <Compile Include="Services\Ingenico\Connection\ConnectionState.cs" />
+    <Compile Include="Services\Ingenico\Connection\ErrorCodeCategorizer.cs" />
+    <Compile Include="Services\Ingenico\Connection\GmpConnectionException.cs" />
+    <Compile Include="Services\Ingenico\Connection\GmpConnectionWrapper.cs" />
+    <Compile Include="Services\Ingenico\Connection\IConnectionManager.cs" />
+    <Compile Include="Services\Ingenico\Diagnostics\DiagnosticEvent.cs" />
+    <Compile Include="Services\Ingenico\Diagnostics\DiagnosticLogger.cs" />
+    <Compile Include="Services\Ingenico\Diagnostics\DiagnosticMetrics.cs" />
+    <Compile Include="Services\Ingenico\Diagnostics\IDiagnosticLogger.cs" />
+    <Compile Include="Services\Ingenico\Diagnostics\LogLevel.cs" />
     <Compile Include="Services\Ingenico\FiscalLogManager\LogManagerOrder.cs" />
+    <Compile Include="Services\Ingenico\FiscalLogManager\LogManagerOrderV2.cs" />
+    <Compile Include="Services\Ingenico\FiscalLogManager\TransactionStateTracker.cs" />
     <Compile Include="Services\Ingenico\GmpIngenico\Defines.cs" />
     <Compile Include="Services\Ingenico\GmpIngenico\ErrorClass.cs" />
     <Compile Include="Services\Ingenico\GmpIngenico\GMPSmartDLL.cs" />
     <Compile Include="Services\Ingenico\GmpIngenico\IFunctions.cs" />
     <Compile Include="Services\Ingenico\GmpIngenico\Utility.cs" />
     <Compile Include="Services\Ingenico\Helper\CommandHelperGmpProvider.cs" />
+    <Compile Include="Services\Ingenico\Interface\InterfaceInfo.cs" />
+    <Compile Include="Services\Ingenico\Interface\InterfaceManager.cs" />
+    <Compile Include="Services\Ingenico\Interface\InterfaceValidator.cs" />
+    <Compile Include="Services\Ingenico\Retry\ConnectionRetryHelper.cs" />
+    <Compile Include="Services\Ingenico\Retry\RetryExecutor.cs" />
+    <Compile Include="Services\Ingenico\Retry\RetryPolicy.cs" />
+    <Compile Include="Services\Ingenico\Retry\RetryResult.cs" />
     <Compile Include="Services\Ingenico\Models\BankInfoDto.cs" />
     <Compile Include="Services\Ingenico\Models\BankPaymentRefundDto.cs" />
     <Compile Include="Services\Ingenico\Models\BatchCommandResultDto.cs" />
@@ -175,6 +202,7 @@
     <Compile Include="Services\Ingenico\Models\TaxGroupsInfoDto.cs" />
     <Compile Include="Services\Ingenico\Models\VersionInfo.cs" />
     <Compile Include="Services\Ingenico\Pairing\PairingGmpProvider.cs" />
+    <Compile Include="Services\Ingenico\Pairing\PairingGmpProviderV2.cs" />
     <Compile Include="Services\Ingenico\Print\PrintReceiptGmpProvider.cs" />
     <Compile Include="Services\Ingenico\Print\PrintReceiptReturnMode.cs" />
     <Compile Include="Services\Ingenico\Print\PrintUserMessage.cs" />
@@ -207,7 +235,16 @@
     <Compile Include="Services\Ingenico\SingleMethod\RunCCommand.cs" />
     <Compile Include="Services\Ingenico\SingleMethod\SingleFunctions.cs" />
     <Compile Include="Services\Ingenico\SingleMethod\StartCommand.cs" />
+    <Compile Include="Services\Ingenico\Persistence\FilePersistenceProvider.cs" />
+    <Compile Include="Services\Ingenico\Persistence\IPersistenceProvider.cs" />
+    <Compile Include="Services\Ingenico\Persistence\PersistedState.cs" />
+    <Compile Include="Services\Ingenico\Persistence\PersistenceService.cs" />
+    <Compile Include="Services\Ingenico\Persistence\PersistenceStrategy.cs" />
+    <Compile Include="Services\Ingenico\Recovery\RecoveryCoordinator.cs" />
     <Compile Include="Services\Ingenico\TaxGroup\TaxGroup.cs" />
+    <Compile Include="Services\Ingenico\Transaction\TransactionManager.cs" />
+    <Compile Include="Services\Ingenico\Transaction\TransactionState.cs" />
+    <Compile Include="Services\Ingenico\Transaction\TransactionValidator.cs" />
     <Compile Include="Startup.cs" />
     <Compile Include="Statics\ApplicationHelper.cs" />
     <Compile Include="Statics\AppStatics.cs" />
