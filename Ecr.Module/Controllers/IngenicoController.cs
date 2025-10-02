@@ -30,6 +30,10 @@ namespace Ecr.Module.Controllers
         private static ILogger _logger;
         private readonly IngenicoService _ingenicoService;
 
+        // Global lock - Ingenico aynı anda sadece 1 işlem yapabilir
+        private static readonly object _ingenicoLock = new object();
+        private const int LOCK_TIMEOUT_MS = 120000; // 2 dakika (max işlem süresi)
+
         public IngenicoController()
         {
             if (_logger == null)
@@ -143,9 +147,12 @@ namespace Ecr.Module.Controllers
         {
             ShowNotification("API İsteği Alındı", "HttpPost /ingenico/Pairing ");
             _logger.Information($"API isteği Alındı: HttpPost /ingenico/Pairing");
-            var response = new IngenicoApiResponse<GmpPairingDto>();
-            try
+
+            return ExecuteWithLock(() =>
             {
+                var response = new IngenicoApiResponse<GmpPairingDto>();
+                try
+                {
                 DataStore.gmpxml = Path.Combine(System.Windows.Forms.Application.StartupPath, "GMP.XML");
                 DataStore.gmpini = Path.Combine(System.Windows.Forms.Application.StartupPath, "GMP.ini");
                 SettingsInfo.getIniValues();
@@ -180,14 +187,15 @@ namespace Ecr.Module.Controllers
                 response.Status = result.ReturnCode == Defines.TRAN_RESULT_OK ? true : false;
                 DataStore.Connection = response.Status ? ConnectionStatus.Connected : ConnectionStatus.NotConnected;
             }
-            catch (Exception ex)
-            {
-                response.Status = false;
-                response.ErrorCode = "9999";
-                response.Message = ex.Message;
-            }
-            _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/Pairing => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
-            return response;
+                catch (Exception ex)
+                {
+                    response.Status = false;
+                    response.ErrorCode = "9999";
+                    response.Message = ex.Message;
+                }
+                _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/Pairing => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
+                return response;
+            }, "Pairing");
         }
 
         [HttpPost]
@@ -196,31 +204,35 @@ namespace Ecr.Module.Controllers
         {
             ShowNotification("API İsteği Alındı", "HttpPost /ingenico/Echo");
             _logger.Information($"API isteği Alındı: HttpPost /ingenico/Echo");
-            var response = new IngenicoApiResponse<GmpPairingDto>();
-            try
+
+            return ExecuteWithLock(() =>
             {
-                var result = new GmpPairingDto();
-                ST_ECHO stEcho = new ST_ECHO();
-                result.ReturnCode = Json_GMPSmartDLL.FP3_Echo(result.GmpInfo.CurrentInterface, ref stEcho, Defines.TIMEOUT_ECHO);
-                result.GmpInfo.ActiveCashier = stEcho.activeCashier.name;
-                result.GmpInfo.ActiveCashierNo = stEcho.activeCashier.index + 1;
-                result.GmpInfo.EcrStatus = (int)stEcho.status;
-                result.GmpInfo.ecrMode = stEcho.ecrMode;
-                DataStore.gmpResult = result;
-                response.Data = result;
-                response.Message = result.ReturnCodeMessage;
-                response.ErrorCode = result.ReturnCode.ToString();
-                response.Status = result.ReturnCode == Defines.TRAN_RESULT_OK ? true : false;
-                DataStore.Connection = response.Status ? ConnectionStatus.Connected : ConnectionStatus.NotConnected;
-            }
-            catch (Exception ex)
-            {
-                response.Status = false;
-                response.ErrorCode = "9999";
-                response.Message = ex.Message;
-            }
-            _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/Echo => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
-            return response;
+                var response = new IngenicoApiResponse<GmpPairingDto>();
+                try
+                {
+                    var result = new GmpPairingDto();
+                    ST_ECHO stEcho = new ST_ECHO();
+                    result.ReturnCode = Json_GMPSmartDLL.FP3_Echo(result.GmpInfo.CurrentInterface, ref stEcho, Defines.TIMEOUT_ECHO);
+                    result.GmpInfo.ActiveCashier = stEcho.activeCashier.name;
+                    result.GmpInfo.ActiveCashierNo = stEcho.activeCashier.index + 1;
+                    result.GmpInfo.EcrStatus = (int)stEcho.status;
+                    result.GmpInfo.ecrMode = stEcho.ecrMode;
+                    DataStore.gmpResult = result;
+                    response.Data = result;
+                    response.Message = result.ReturnCodeMessage;
+                    response.ErrorCode = result.ReturnCode.ToString();
+                    response.Status = result.ReturnCode == Defines.TRAN_RESULT_OK ? true : false;
+                    DataStore.Connection = response.Status ? ConnectionStatus.Connected : ConnectionStatus.NotConnected;
+                }
+                catch (Exception ex)
+                {
+                    response.Status = false;
+                    response.ErrorCode = "9999";
+                    response.Message = ex.Message;
+                }
+                _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/Echo => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
+                return response;
+            }, "Echo");
         }
 
         [HttpPost]
@@ -229,21 +241,25 @@ namespace Ecr.Module.Controllers
         {
             ShowNotification("API İsteği Alındı", "HttpPost /ingenico/BankList");
             _logger.Information($"API isteği Alındı: HttpPost /ingenico/BankList");
-            var response = new IngenicoApiResponse<List<BankInfoDto>>();
-            try
-            {
-                var gmpBankList = new BankList();
-                response = gmpBankList.GetBankList();
 
-            }
-            catch (Exception ex)
+            return ExecuteWithLock(() =>
             {
-                response.Status = false;
-                response.ErrorCode = "9999";
-                response.Message = ex.Message;
-            }
-            _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/BankList => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
-            return response;
+                var response = new IngenicoApiResponse<List<BankInfoDto>>();
+                try
+                {
+                    var gmpBankList = new BankList();
+                    response = gmpBankList.GetBankList();
+
+                }
+                catch (Exception ex)
+                {
+                    response.Status = false;
+                    response.ErrorCode = "9999";
+                    response.Message = ex.Message;
+                }
+                _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/BankList => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
+                return response;
+            }, "BankList");
         }
 
         [HttpPost]
@@ -252,21 +268,25 @@ namespace Ecr.Module.Controllers
         {
             ShowNotification("API İsteği Alındı", "HttpPost /ingenico/Header");
             _logger.Information($"API isteği Alındı: HttpPost /ingenico/Header");
-            var response = new IngenicoApiResponse<FiscalHeaderDto>();
-            try
-            {
-                var header = new Header();
-                response = header.GmpGetReceiptHeader();
 
-            }
-            catch (Exception ex)
+            return ExecuteWithLock(() =>
             {
-                response.Status = false;
-                response.ErrorCode = "9999";
-                response.Message = ex.Message;
-            }
-            _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/Header => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
-            return response;
+                var response = new IngenicoApiResponse<FiscalHeaderDto>();
+                try
+                {
+                    var header = new Header();
+                    response = header.GmpGetReceiptHeader();
+
+                }
+                catch (Exception ex)
+                {
+                    response.Status = false;
+                    response.ErrorCode = "9999";
+                    response.Message = ex.Message;
+                }
+                _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/Header => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
+                return response;
+            }, "Header");
         }
 
         [HttpPost]
@@ -275,24 +295,28 @@ namespace Ecr.Module.Controllers
         {
             ShowNotification("API İsteği Alındı", "HttpPost /ingenico/TaxGroupsPairing");
             _logger.Information($"API isteği Alındı: HttpPost /ingenico/TaxGroupsPairing");
-            var response = new IngenicoApiResponse<TaxGroupsInfoDto>();
-            try
+
+            return ExecuteWithLock(() =>
             {
-                var taxGroup = new TaxGroup();
-                var result = taxGroup.TaxGroupsPairing(taxGroups);
-                response.Data = result.Data;
-                response.Message = result.Data.ReturnCodeMessage;
-                response.ErrorCode = result.Data.ReturnCode.ToString();
-                response.Status = result.Data.ReturnCode == Defines.TRAN_RESULT_OK ? true : false;
-            }
-            catch (Exception ex)
-            {
-                response.Status = false;
-                response.ErrorCode = "9999";
-                response.Message = ex.Message;
-            }
-            _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/TaxGroupsPairing => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
-            return response;
+                var response = new IngenicoApiResponse<TaxGroupsInfoDto>();
+                try
+                {
+                    var taxGroup = new TaxGroup();
+                    var result = taxGroup.TaxGroupsPairing(taxGroups);
+                    response.Data = result.Data;
+                    response.Message = result.Data.ReturnCodeMessage;
+                    response.ErrorCode = result.Data.ReturnCode.ToString();
+                    response.Status = result.Data.ReturnCode == Defines.TRAN_RESULT_OK ? true : false;
+                }
+                catch (Exception ex)
+                {
+                    response.Status = false;
+                    response.ErrorCode = "9999";
+                    response.Message = ex.Message;
+                }
+                _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/TaxGroupsPairing => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
+                return response;
+            }, "TaxGroupsPairing");
         }
 
         [HttpPost]
@@ -301,24 +325,28 @@ namespace Ecr.Module.Controllers
         {
             ShowNotification("API İsteği Alındı", "HttpPost /ingenico/GetTaxGroups");
             _logger.Information($"API isteği Alındı: HttpPost /ingenico/GetTaxGroups");
-            var response = new IngenicoApiResponse<TaxGroupsInfoDto>();
-            try
+
+            return ExecuteWithLock(() =>
             {
-                var taxGroup = new TaxGroup();
-                var result = taxGroup.GettaxGroups();
-                response.Data = result.Data;
-                response.Message = result.Data.ReturnCodeMessage;
-                response.ErrorCode = result.Data.ReturnCode.ToString();
-                response.Status = result.Data.ReturnCode == Defines.TRAN_RESULT_OK ? true : false;
-            }
-            catch (Exception ex)
-            {
-                response.Status = false;
-                response.ErrorCode = "9999";
-                response.Message = ex.Message;
-            }
-            _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/GetTaxGroups => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
-            return response;
+                var response = new IngenicoApiResponse<TaxGroupsInfoDto>();
+                try
+                {
+                    var taxGroup = new TaxGroup();
+                    var result = taxGroup.GettaxGroups();
+                    response.Data = result.Data;
+                    response.Message = result.Data.ReturnCodeMessage;
+                    response.ErrorCode = result.Data.ReturnCode.ToString();
+                    response.Status = result.Data.ReturnCode == Defines.TRAN_RESULT_OK ? true : false;
+                }
+                catch (Exception ex)
+                {
+                    response.Status = false;
+                    response.ErrorCode = "9999";
+                    response.Message = ex.Message;
+                }
+                _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/GetTaxGroups => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
+                return response;
+            }, "GetTaxGroups");
         }
 
         [HttpPost]
@@ -327,24 +355,28 @@ namespace Ecr.Module.Controllers
         {
             ShowNotification("API İsteği Alındı", "HttpPost /ingenico/GetDepartmans");
             _logger.Information($"API isteği Alındı: HttpPost /ingenico/GetDepartmans");
-            var response = new IngenicoApiResponse<ST_DEPARTMENT[]>();
-            try
+
+            return ExecuteWithLock(() =>
             {
-                var taxGroup = new TaxGroup();
-                var result = taxGroup.GetDepartmans();
-                response.Data = result.Data;
-                response.Message = result.Message;
-                response.ErrorCode = result.ErrorCode;
-                response.Status = result.Status;
-            }
-            catch (Exception ex)
-            {
-                response.Status = false;
-                response.ErrorCode = "9999";
-                response.Message = ex.Message;
-            }
-            _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/GetDepartmans => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
-            return response;
+                var response = new IngenicoApiResponse<ST_DEPARTMENT[]>();
+                try
+                {
+                    var taxGroup = new TaxGroup();
+                    var result = taxGroup.GetDepartmans();
+                    response.Data = result.Data;
+                    response.Message = result.Message;
+                    response.ErrorCode = result.ErrorCode;
+                    response.Status = result.Status;
+                }
+                catch (Exception ex)
+                {
+                    response.Status = false;
+                    response.ErrorCode = "9999";
+                    response.Message = ex.Message;
+                }
+                _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/GetDepartmans => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
+                return response;
+            }, "GetDepartmans");
         }
 
         [HttpPost]
@@ -353,24 +385,28 @@ namespace Ecr.Module.Controllers
         {
             ShowNotification("API İsteği Alındı", "HttpPost /ingenico/ReadZReport");
             _logger.Information($"API isteği Alındı: HttpPost /ingenico/ReadZReport");
-            var response = new IngenicoApiResponse<string>();
-            try
+
+            return ExecuteWithLock(() =>
             {
-                var report = new ReportPrinting();
-                var result = report.ReportPrint(reportRequest);
-                response.Data = result.Data;
-                response.Message = result.Message;
-                response.ErrorCode = result.ErrorCode;
-                response.Status = result.Status;
-            }
-            catch (Exception ex)
-            {
-                response.Status = false;
-                response.ErrorCode = "9999";
-                response.Message = ex.Message;
-            }
-            _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/ReadZReport => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
-            return response;
+                var response = new IngenicoApiResponse<string>();
+                try
+                {
+                    var report = new ReportPrinting();
+                    var result = report.ReportPrint(reportRequest);
+                    response.Data = result.Data;
+                    response.Message = result.Message;
+                    response.ErrorCode = result.ErrorCode;
+                    response.Status = result.Status;
+                }
+                catch (Exception ex)
+                {
+                    response.Status = false;
+                    response.ErrorCode = "9999";
+                    response.Message = ex.Message;
+                }
+                _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/ReadZReport => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
+                return response;
+            }, "ReadZReport");
         }
 
         [HttpPost]
@@ -379,9 +415,12 @@ namespace Ecr.Module.Controllers
         {
             ShowNotification("API İsteği Alındı", "HttpPost /ingenico/EftPosPrintOrder");
             _logger.Information($"API isteği Alındı: HttpPost /ingenico/EftPosPrintOrder");
-            var response = new IngenicoApiResponse<GmpPrintReceiptDto>();
-            try
+
+            return ExecuteWithLock(() =>
             {
+                var response = new IngenicoApiResponse<GmpPrintReceiptDto>();
+                try
+                {
                 if (DataStore.Connection != ConnectionStatus.Connected)
                 {
                     // V2: Improved retry logic, connection management, interface validation
@@ -452,15 +491,16 @@ namespace Ecr.Module.Controllers
 
 
                 response.Status = response.Data.ReturnCode == Defines.TRAN_RESULT_OK ? true : false;
-            }
-            catch (Exception ex)
-            {
-                response.Status = false;
-                response.ErrorCode = "9999";
-                response.Message = ex.Message;
-            }
-            _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/EftPosPrintOrder => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
-            return response;
+                }
+                catch (Exception ex)
+                {
+                    response.Status = false;
+                    response.ErrorCode = "9999";
+                    response.Message = ex.Message;
+                }
+                _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/EftPosPrintOrder => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
+                return response;
+            }, "EftPosPrintOrder");
         }
 
         [HttpPost]
@@ -469,37 +509,72 @@ namespace Ecr.Module.Controllers
         {
             ShowNotification("API İsteği Alındı", "HttpPost /ingenico/Ping");
             _logger.Information($"API isteği Alındı: HttpPost /ingenico/Ping");
-            var response = new IngenicoApiResponse<GmpPingResultDto>();
-            var ret = new GmpPingResultDto();
+
+            // Ping için özel lock mantığı: eğer cihaz meşgulse, Ingenico'ya gitmeden yanıt dön
+            var lockAcquired = false;
             try
             {
-                // V2: Improved retry logic with ConnectionRetryHelper
-                var ping = new PairingGmpProviderV2();
-                ret = ping.GmpPing();
+                lockAcquired = System.Threading.Monitor.TryEnter(_ingenicoLock, 0); // Timeout = 0 (beklemeden kontrol et)
 
-                if (ret.ReturnCode == Defines.TRAN_RESULT_OK)
+                if (!lockAcquired)
                 {
-                    response.Status = true;
-                    response.ErrorCode = 0.ToString();
-                    response.Message = ret.ReturnStringMessage;
-                    response.Data = ret;
+                    _logger.Warning("[PING-BUSY] Cihaz meşgul - Ping yanıtı direkt döndürülüyor");
+                    return new IngenicoApiResponse<GmpPingResultDto>
+                    {
+                        Status = false,
+                        ErrorCode = "0xF01C",
+                        Message = "YAZARKASA MEŞGUL. EFT-POS CİHAZINI KONTROL EDİNİZ.",
+                        Data = new GmpPingResultDto
+                        {
+                            ReturnCode = 0xF01C,
+                            ReturnCodeMessage = "DLL_RETCODE_RECV_BUSY [61468]",
+                            ReturnStringMessage = "YAZARKASA MEŞGUL. EFT-POS CİHAZINI KONTROL EDİNİZ."
+                        }
+                    };
                 }
-                else
+
+                _logger.Debug("[LOCK-ACQUIRED] Ping");
+
+                var response = new IngenicoApiResponse<GmpPingResultDto>();
+                var ret = new GmpPingResultDto();
+                try
+                {
+                    // V2: Improved retry logic with ConnectionRetryHelper
+                    var ping = new PairingGmpProviderV2();
+                    ret = ping.GmpPing();
+
+                    if (ret.ReturnCode == Defines.TRAN_RESULT_OK)
+                    {
+                        response.Status = true;
+                        response.ErrorCode = 0.ToString();
+                        response.Message = ret.ReturnStringMessage;
+                        response.Data = ret;
+                    }
+                    else
+                    {
+                        response.Status = false;
+                        response.ErrorCode = ret.ReturnCode.ToString();
+                        response.Message = ret.ReturnStringMessage + " - " + ret.ReturnCodeMessage;
+                    }
+
+                }
+                catch (Exception ex)
                 {
                     response.Status = false;
-                    response.ErrorCode = ret.ReturnCode.ToString();
-                    response.Message = ret.ReturnStringMessage + " - " + ret.ReturnCodeMessage;
+                    response.ErrorCode = "9999";
+                    response.Message = ex.Message;
                 }
-
+                _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/Ping => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
+                return response;
             }
-            catch (Exception ex)
+            finally
             {
-                response.Status = false;
-                response.ErrorCode = "9999";
-                response.Message = ex.Message;
+                if (lockAcquired)
+                {
+                    System.Threading.Monitor.Exit(_ingenicoLock);
+                    _logger.Debug("[LOCK-RELEASED] Ping");
+                }
             }
-            _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/Ping => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
-            return response;
         }
 
         [HttpPost]
@@ -508,36 +583,40 @@ namespace Ecr.Module.Controllers
         {
             ShowNotification("API İsteği Alındı", "HttpPost /ingenico/ReportPrint");
             _logger.Information($"API isteği Alındı: HttpPost /ingenico/ReportPrint");
-            var response = new IngenicoApiResponse<string>();
-            var ret = new IngenicoApiResponse<string>();
-            try
-            {
-                var reportprint = new ReportPrinting();
-                ret = reportprint.ReportPrint(reportRequest);
 
-                if (ret.Status)
+            return ExecuteWithLock(() =>
+            {
+                var response = new IngenicoApiResponse<string>();
+                var ret = new IngenicoApiResponse<string>();
+                try
                 {
-                    response.Status = true;
-                    response.ErrorCode = 0.ToString();
-                    response.Message = ret.Message;
-                    response.Data = ret.Data;
+                    var reportprint = new ReportPrinting();
+                    ret = reportprint.ReportPrint(reportRequest);
+
+                    if (ret.Status)
+                    {
+                        response.Status = true;
+                        response.ErrorCode = 0.ToString();
+                        response.Message = ret.Message;
+                        response.Data = ret.Data;
+                    }
+                    else
+                    {
+                        response.Status = false;
+                        response.ErrorCode = ret.ErrorCode;
+                        response.Message = ret.Message;
+                    }
+
                 }
-                else
+                catch (Exception ex)
                 {
                     response.Status = false;
-                    response.ErrorCode = ret.ErrorCode;
-                    response.Message = ret.Message;
+                    response.ErrorCode = "9999";
+                    response.Message = ex.Message;
                 }
-
-            }
-            catch (Exception ex)
-            {
-                response.Status = false;
-                response.ErrorCode = "9999";
-                response.Message = ex.Message;
-            }
-            _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/ReportPrint => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
-            return response;
+                _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/ReportPrint => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
+                return response;
+            }, "ReportPrint");
         }
 
         [HttpPost]
@@ -546,36 +625,40 @@ namespace Ecr.Module.Controllers
         {
             ShowNotification("API İsteği Alındı", "HttpPost /ingenico/SetHeader");
             _logger.Information($"API isteği Alındı: HttpPost /ingenico/SetHeader");
-            var response = new IngenicoApiResponse<FiscalHeaderDto>();
-            var ret = new IngenicoApiResponse<FiscalHeaderDto>();
-            try
-            {
-                var header = new Header();
-                ret = header.GmpReceiptHeaderSend(reportRequest);
 
-                if (ret.Status)
+            return ExecuteWithLock(() =>
+            {
+                var response = new IngenicoApiResponse<FiscalHeaderDto>();
+                var ret = new IngenicoApiResponse<FiscalHeaderDto>();
+                try
                 {
-                    response.Status = true;
-                    response.ErrorCode = 0.ToString();
-                    response.Message = ret.Message;
-                    response.Data = ret.Data;
+                    var header = new Header();
+                    ret = header.GmpReceiptHeaderSend(reportRequest);
+
+                    if (ret.Status)
+                    {
+                        response.Status = true;
+                        response.ErrorCode = 0.ToString();
+                        response.Message = ret.Message;
+                        response.Data = ret.Data;
+                    }
+                    else
+                    {
+                        response.Status = false;
+                        response.ErrorCode = ret.ErrorCode;
+                        response.Message = ret.Message;
+                    }
+
                 }
-                else
+                catch (Exception ex)
                 {
                     response.Status = false;
-                    response.ErrorCode = ret.ErrorCode;
-                    response.Message = ret.Message;
+                    response.ErrorCode = "9999";
+                    response.Message = ex.Message;
                 }
-
-            }
-            catch (Exception ex)
-            {
-                response.Status = false;
-                response.ErrorCode = "9999";
-                response.Message = ex.Message;
-            }
-            _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/SetHeader => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
-            return response;
+                _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/SetHeader => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
+                return response;
+            }, "SetHeader");
         }
 
         /// <summary>
@@ -646,6 +729,37 @@ namespace Ecr.Module.Controllers
 
                 // Don't notify user - this is internal error
                 // Application continues normally
+            }
+        }
+
+        /// <summary>
+        /// Thread-safe Ingenico işlem executor
+        /// Aynı anda sadece 1 Ingenico işlemi çalışır
+        /// </summary>
+        private T ExecuteWithLock<T>(Func<T> action, string operationName)
+        {
+            var lockAcquired = false;
+            try
+            {
+                // Lock almaya çalış - timeout ile
+                lockAcquired = System.Threading.Monitor.TryEnter(_ingenicoLock, LOCK_TIMEOUT_MS);
+
+                if (!lockAcquired)
+                {
+                    _logger.Warning($"[LOCK-TIMEOUT] {operationName} - Lock alınamadı (timeout: {LOCK_TIMEOUT_MS}ms)");
+                    throw new TimeoutException($"Ingenico meşgul - işlem zaman aşımına uğradı: {operationName}");
+                }
+
+                _logger.Debug($"[LOCK-ACQUIRED] {operationName}");
+                return action();
+            }
+            finally
+            {
+                if (lockAcquired)
+                {
+                    System.Threading.Monitor.Exit(_ingenicoLock);
+                    _logger.Debug($"[LOCK-RELEASED] {operationName}");
+                }
             }
         }
 

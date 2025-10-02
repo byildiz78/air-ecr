@@ -16,6 +16,12 @@ namespace Ecr.Module.Services.Ingenico.ReceiptHeader
 
                 var returnCode = Json_GMPSmartDLL.FP3_GetTicketHeader(DataStore.CurrentInterface, 0xFF, ref stTicketHeader, ref totalNumberOfHeaderPlaces, Defines.TIMEOUT_DEFAULT);
 
+                // Ensure GmpInfo and fiscalHeader are initialized
+                if (DataStore.gmpResult.GmpInfo == null)
+                    DataStore.gmpResult.GmpInfo = new GmpInfoDto();
+                if (DataStore.gmpResult.GmpInfo.fiscalHeader == null)
+                    DataStore.gmpResult.GmpInfo.fiscalHeader = new FiscalHeaderDto();
+
                 DataStore.gmpResult.GmpInfo.fiscalHeader.ReturnCodeMessage = ErrorClass.DisplayErrorCodeMessage(returnCode);
                 DataStore.gmpResult.GmpInfo.fiscalHeader.ReturnStringMessage = ErrorClass.DisplayErrorMessage(returnCode);
                 

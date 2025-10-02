@@ -1,4 +1,5 @@
-﻿using Ecr.Module.Statics;
+﻿using Ecr.Module.Forms;
+using Ecr.Module.Statics;
 using Microsoft.Owin;
 using Serilog;
 using Serilog.Context;
@@ -24,11 +25,21 @@ namespace Ecr.Module.Middlewares
         }
         public override async Task Invoke(IOwinContext context)
         {
+            var stopwatch = Stopwatch.StartNew();
+
             // Request'i handle et
             var requestInfo = await CaptureRequest(context);
 
+            // UI'a request logla
+            LogToUI(context.Request.Method, context.Request.Path.Value);
+
             // Response'u handle et
             var responseInfo = await CaptureResponse(context, async () => await Next.Invoke(context));
+
+            stopwatch.Stop();
+
+            // UI'a response logla
+            LogResponseToUI(context.Response.StatusCode, context.Request.Path.Value, stopwatch.ElapsedMilliseconds, responseInfo);
 
             // Log
             var correlationId = Guid.NewGuid().ToString();
@@ -133,6 +144,34 @@ responseBody
 );
         }
 
+        private void LogToUI(string method, string path)
+        {
+            try
+            {
+                if (frmMain.Instance != null)
+                {
+                    frmMain.Instance.LogRequest(method, path);
+                }
+            }
+            catch
+            {
+                // UI logging hatası ana işlemi etkilememeli
+            }
+        }
 
+        private void LogResponseToUI(int statusCode, string path, long durationMs, string body)
+        {
+            try
+            {
+                if (frmMain.Instance != null)
+                {
+                    frmMain.Instance.LogResponse(statusCode, path, durationMs, body);
+                }
+            }
+            catch
+            {
+                // UI logging hatası ana işlemi etkilememeli
+            }
+        }
     }
 }
