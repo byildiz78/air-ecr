@@ -4,6 +4,8 @@ using Ecr.Module.Services.Ingenico.FiscalLogManager;
 using Ecr.Module.Services.Ingenico.GmpIngenico;
 using Ecr.Module.Services.Ingenico.Models;
 using Ecr.Module.Services.Ingenico.Persistence;
+using Ecr.Module.Services.Ingenico.Print;
+using Ecr.Module.Services.Ingenico.SingleMethod;
 using Ecr.Module.Services.Ingenico.Transaction;
 using System;
 using System.Collections.Generic;
@@ -569,7 +571,7 @@ namespace Ecr.Module.Services.Ingenico.Recovery
                 Console.WriteLine($"[RECOVERY] TryVoidSingleOrphanTransaction - File: {fiscalFileName}");
 
                 // Extract OrderKey from filename: "GUID_Fiscal" -> "GUID"
-                string orderKey = fiscalFileName.Replace("_Fiscal", "");
+                string orderKey = fiscalFileName;
                 Console.WriteLine($"[RECOVERY] TryVoidSingleOrphanTransaction - OrderKey: {orderKey}");
 
                 _logger.LogInformation(LogCategory.Recovery,
@@ -681,28 +683,17 @@ namespace Ecr.Module.Services.Ingenico.Recovery
 
                 // Call print service to void
                 Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Calling PrintReceiptGmpProvider.EftPosPrintOrder...");
-                var voidResult = Print.PrintReceiptGmpProvider.EftPosPrintOrder(fiscalData);
-
-                Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Result received");
-                Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Status: {voidResult?.Status}");
-                Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Data: {(voidResult?.Data != null ? "Not null" : "NULL")}");
-                Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - ReturnCode: {voidResult?.Data?.ReturnCode}");
-                Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Message: {voidResult?.Message}");
-
-                if (voidResult != null && voidResult.Status && voidResult.Data != null && voidResult.Data.ReturnCode == Defines.TRAN_RESULT_OK)
+                var voidResult = PrintVoid.EftPosVoidPrintOrder();
+               
+                if (voidResult != null && voidResult.ReturnCode == 0  && voidResult.ReturnCode == Defines.TRAN_RESULT_OK)
                 {
                     Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - SUCCESS!");
-                    _logger.LogInformation(LogCategory.Recovery,
-                        $"Void successful: OrderKey={orderKey}, ReturnCode={voidResult.Data.ReturnCode}",
-                        source: "RecoveryCoordinator");
                     return true;
                 }
                 else
                 {
                     Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - FAILED");
-                    _logger.LogWarning(LogCategory.Recovery,
-                        $"Void failed: OrderKey={orderKey}, Status={voidResult?.Status}, ReturnCode={voidResult?.Data?.ReturnCode}, Message={voidResult?.Message}",
-                        source: "RecoveryCoordinator");
+                   
                     return false;
                 }
             }

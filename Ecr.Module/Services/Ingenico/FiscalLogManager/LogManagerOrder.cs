@@ -322,40 +322,100 @@ namespace Ecr.Module.Services.Ingenico.FiscalLogManager
 
             try
             {
-
                 if (File.Exists($"{_logFolder}\\{sourceId}.txt"))
                 {
-                    var lines = File.ReadAllLines($"{_logFolder}\\{sourceId}.txt");
+                    // Tüm dosya içeriğini oku
+                    var fileContent = File.ReadAllText($"{_logFolder}\\{sourceId}.txt");
+                    
+                    if (string.IsNullOrWhiteSpace(fileContent))
+                    {
+                        Exception(new Exception("Dosya boş"), "GetOrderFileFiscal_EmptyFile", sourceId);
+                        return commands;
+                    }
+
+                    // Dosyada birden fazla JSON olabilir, son geçerli JSON'u bul
+                    var lines = fileContent.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    string completeJson = "";
+                    
                     foreach (var line in lines)
                     {
-                        if (string.IsNullOrWhiteSpace(line)) continue;
-
-                        try
+                        var trimmedLine = line.Trim();
+                        if (string.IsNullOrWhiteSpace(trimmedLine)) continue;
+                        
+                        // Eğer satır { ile başlıyorsa yeni JSON başlangıcı
+                        if (trimmedLine.StartsWith("{"))
                         {
-                            var jsonLine = line.Trim();
-
-                            commands = JsonConvert.DeserializeObject<FiscalOrder>(jsonLine);
-
+                            completeJson = trimmedLine;
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            return commands;
+                            // Devam eden satırları birleştir
+                            completeJson += trimmedLine;
                         }
+                        
+                        // JSON tamamlandı mı kontrol et
+                        if (IsValidJson(completeJson))
+                        {
+                            try
+                            {
+                                // JSON deserializasyon ayarları
+                                var settings = new JsonSerializerSettings
+                                {
+                                    NullValueHandling = NullValueHandling.Ignore,
+                                    MissingMemberHandling = MissingMemberHandling.Ignore,
+                                    DateFormatHandling = DateFormatHandling.IsoDateFormat
+                                };
 
+                                commands = JsonConvert.DeserializeObject<FiscalOrder>(completeJson, settings);
+                                
+                                // Başarılı parse sonrası döngüden çık
+                                break;
+                            }
+                            catch (JsonException jsonEx)
+                            {
+                                Exception(jsonEx, $"GetOrderFileFiscal_JsonError: {completeJson.Substring(0, Math.Min(100, completeJson.Length))}...", sourceId);
+                                return commands;
+                            }
+                        }
+                    }
+                    
+                    // Eğer hiç geçerli JSON bulunamadıysa
+                    if (string.IsNullOrEmpty(completeJson) || !IsValidJson(completeJson))
+                    {
+                        Exception(new Exception($"Geçerli JSON bulunamadı. Dosya içeriği: {fileContent.Substring(0, Math.Min(200, fileContent.Length))}..."), "GetOrderFileFiscal_NoValidJson", sourceId);
                     }
                 }
-
-
-
-
-
             }
             catch (DirectoryNotFoundException ex)
             {
+                Exception(ex, "GetOrderFileFiscal_DirectoryNotFound", sourceId);
+                return commands;
+            }
+            catch (Exception ex)
+            {
+                Exception(ex, "GetOrderFileFiscal_FileReadError", sourceId);
                 return commands;
             }
 
             return commands;
+        }
+
+        private static bool IsValidJson(string jsonString)
+        {
+            if (string.IsNullOrWhiteSpace(jsonString)) return false;
+            
+            jsonString = jsonString.Trim();
+            if (!jsonString.StartsWith("{") || !jsonString.EndsWith("}")) return false;
+            
+            try
+            {
+                JsonConvert.DeserializeObject(jsonString);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
         }
 
         public static bool RenameLog(string oldSourceId, string newSourceId)

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace Ecr.Module.Services.Ingenico.Models
@@ -37,8 +37,8 @@ namespace Ecr.Module.Services.Ingenico.Models
         public DateTime? OrderDateTime { get; set; }
         public bool isGlobal { get; set; }
 
-        public List<FiscalOrderLine> fiscalLines;
-        public List<FiscalPaymentLine> paymentLines;
+        public List<FiscalOrderLine> fiscalLines { get; set; }
+        public List<FiscalPaymentLine> paymentLines { get; set; }
 
         public FiscalOrder()
         {
