@@ -60,12 +60,56 @@ namespace Ecr.Module.Controllers
 
         [HttpGet]
         [Route("Health")]
-        public string Health()
+        public IHttpActionResult Health()
         {
             _logger.Information("API isteği alındı: GET /ingenico/Health");
             ShowNotification("API İsteği Alındı", "GET /ingenico/Health");
 
-            return "Healthy";
+            // Health için özel lock mantığı: eğer cihaz meşgulse, Ingenico'ya gitmeden yanıt dön
+            var lockAcquired = false;
+            try
+            {
+                lockAcquired = System.Threading.Monitor.TryEnter(_ingenicoLock, 0); // Timeout = 0 (beklemeden kontrol et)
+
+                if (!lockAcquired)
+                {
+                    _logger.Warning("[HEALTH-BUSY] Cihaz meşgul - Health yanıtı direkt döndürülüyor");
+                    return Ok(new
+                    {
+                        status = "busy",
+                        message = "EFT-POS CİHAZI MEŞGUL",
+                        apiRunning = true,
+                        deviceStatus = "busy",
+                        timestamp = DateTime.Now
+                    });
+                }
+
+                _logger.Debug("[LOCK-ACQUIRED] Health");
+
+                // Cihaz durumunu kontrol et
+                var healthCheck = new
+                {
+                    status = "healthy",
+                    message = "API ve cihaz çalışıyor",
+                    apiRunning = true,
+                    deviceStatus = "available",
+                    connectionStatus = DataStore.Connection.ToString(),
+                    activeCashier = DataStore.gmpResult?.GmpInfo?.ActiveCashier ?? "Bilinmiyor",
+                    serialNumber = DataStore.gmpResult?.GmpInfo?.EcrSerialNumber ?? "Bilinmiyor",
+                    timestamp = DateTime.Now
+                };
+
+                _logger.Information($"Health check başarılı: {Newtonsoft.Json.JsonConvert.SerializeObject(healthCheck)}");
+                return Ok(healthCheck);
+            }
+            finally
+            {
+                if (lockAcquired)
+                {
+                    System.Threading.Monitor.Exit(_ingenicoLock);
+                    _logger.Debug("[LOCK-RELEASED] Health");
+                }
+            }
         }
 
         [HttpGet]
