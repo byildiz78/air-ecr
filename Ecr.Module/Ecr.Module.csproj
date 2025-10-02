@@ -149,6 +149,9 @@
     <Compile Include="Forms\Components\RequestLogViewer.cs">
       <SubType>UserControl</SubType>
     </Compile>
+    <Compile Include="Forms\Components\SettingsPanel.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Middlewares\LoggingMiddleware.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\IngenicoService.cs" />

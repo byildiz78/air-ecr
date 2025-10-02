@@ -40,11 +40,14 @@ namespace Ecr.Module.Forms
             this.requestLogViewer = new RequestLogViewer();
             this.tabLogs = new System.Windows.Forms.TabPage();
             this.logsPanel = new LogsPanel();
+            this.tabSettings = new System.Windows.Forms.TabPage();
+            this.settingsPanel = new SettingsPanel();
             this.pnlHeader.SuspendLayout();
             this.tabControl.SuspendLayout();
             this.tabDashboard.SuspendLayout();
             this.tabRequests.SuspendLayout();
             this.tabLogs.SuspendLayout();
+            this.tabSettings.SuspendLayout();
             this.SuspendLayout();
             //
             // pnlHeader
@@ -66,7 +69,7 @@ namespace Ecr.Module.Forms
             this.lblTitle.Name = "lblTitle";
             this.lblTitle.Size = new System.Drawing.Size(260, 32);
             this.lblTitle.TabIndex = 0;
-            this.lblTitle.Text = "Infinia ECR - Dashboard";
+            this.lblTitle.Text = "robotPOS Air ECR - Dashboard";
             this.lblTitle.TextAlign = System.Drawing.ContentAlignment.MiddleCenter;
             //
             // tabControl
@@ -74,6 +77,7 @@ namespace Ecr.Module.Forms
             this.tabControl.Controls.Add(this.tabDashboard);
             this.tabControl.Controls.Add(this.tabRequests);
             this.tabControl.Controls.Add(this.tabLogs);
+            this.tabControl.Controls.Add(this.tabSettings);
             this.tabControl.Dock = System.Windows.Forms.DockStyle.Fill;
             this.tabControl.Font = new System.Drawing.Font("Segoe UI", 10F);
             this.tabControl.Location = new System.Drawing.Point(0, 60);
@@ -142,6 +146,26 @@ namespace Ecr.Module.Forms
             this.logsPanel.Size = new System.Drawing.Size(1386, 798);
             this.logsPanel.TabIndex = 0;
             //
+            // tabSettings
+            //
+            this.tabSettings.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(37)))), ((int)(((byte)(38)))));
+            this.tabSettings.Controls.Add(this.settingsPanel);
+            this.tabSettings.Location = new System.Drawing.Point(4, 32);
+            this.tabSettings.Name = "tabSettings";
+            this.tabSettings.Padding = new System.Windows.Forms.Padding(3);
+            this.tabSettings.Size = new System.Drawing.Size(1392, 804);
+            this.tabSettings.TabIndex = 3;
+            this.tabSettings.Text = "Ayarlar";
+            //
+            // settingsPanel
+            //
+            this.settingsPanel.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(37)))), ((int)(((byte)(37)))), ((int)(((byte)(38)))));
+            this.settingsPanel.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.settingsPanel.Location = new System.Drawing.Point(3, 3);
+            this.settingsPanel.Name = "settingsPanel";
+            this.settingsPanel.Size = new System.Drawing.Size(1386, 798);
+            this.settingsPanel.TabIndex = 0;
+            //
             // frmMain
             //
             this.AutoScaleDimensions = new System.Drawing.SizeF(9F, 20F);
@@ -156,7 +180,7 @@ namespace Ecr.Module.Forms
             this.MinimizeBox = true;
             this.Name = "frmMain";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Infinia ECR - Dashboard";
+            this.Text = "robotPOS Air ECR - Dashboard";
             this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
             this.Load += new System.EventHandler(this.Form1_Load);
             this.pnlHeader.ResumeLayout(false);
@@ -165,6 +189,7 @@ namespace Ecr.Module.Forms
             this.tabDashboard.ResumeLayout(false);
             this.tabRequests.ResumeLayout(false);
             this.tabLogs.ResumeLayout(false);
+            this.tabSettings.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -177,8 +202,10 @@ namespace Ecr.Module.Forms
         private System.Windows.Forms.TabPage tabDashboard;
         private System.Windows.Forms.TabPage tabRequests;
         private System.Windows.Forms.TabPage tabLogs;
+        private System.Windows.Forms.TabPage tabSettings;
         private DashboardPanel dashboardPanel;
         private RequestLogViewer requestLogViewer;
         private LogsPanel logsPanel;
+        private SettingsPanel settingsPanel;
     }
 }
