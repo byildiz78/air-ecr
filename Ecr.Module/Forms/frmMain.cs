@@ -13,7 +13,7 @@ namespace Ecr.Module.Forms
         private bool _apiRunning = false;
         private NotifyIcon _trayIcon;
         private ContextMenuStrip _trayMenu;
-        private string _baseAddress = "http://localhost:{0}/";
+        private string _baseAddress = "http://+:{0}/"; // + allows both localhost and network access
         private int _port;
         private ILogger _logger;
 
