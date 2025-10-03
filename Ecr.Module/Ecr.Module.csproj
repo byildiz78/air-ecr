@@ -247,6 +247,8 @@
     <Compile Include="Services\Ingenico\SingleMethod\RunCCommand.cs" />
     <Compile Include="Services\Ingenico\SingleMethod\SingleFunctions.cs" />
     <Compile Include="Services\Ingenico\SingleMethod\StartCommand.cs" />
+    <Compile Include="Services\Ingenico\SingleMethod\VoidPayment.cs" />
+    <Compile Include="Models\VoidPaymentRequest.cs" />
     <Compile Include="Services\Ingenico\Persistence\FilePersistenceProvider.cs" />
     <Compile Include="Services\Ingenico\Persistence\IPersistenceProvider.cs" />
     <Compile Include="Services\Ingenico\Persistence\PersistedState.cs" />

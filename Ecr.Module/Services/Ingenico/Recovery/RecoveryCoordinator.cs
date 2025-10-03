@@ -571,7 +571,9 @@ namespace Ecr.Module.Services.Ingenico.Recovery
                 Console.WriteLine($"[RECOVERY] TryVoidSingleOrphanTransaction - File: {fiscalFileName}");
 
                 // Extract OrderKey from filename: "GUID_Fiscal" -> "GUID"
-                string orderKey = fiscalFileName;
+                string orderKey = fiscalFileName.EndsWith("_Fiscal")
+                    ? fiscalFileName.Substring(0, fiscalFileName.Length - "_Fiscal".Length)
+                    : fiscalFileName;
                 Console.WriteLine($"[RECOVERY] TryVoidSingleOrphanTransaction - OrderKey: {orderKey}");
 
                 _logger.LogInformation(LogCategory.Recovery,
@@ -684,16 +686,17 @@ namespace Ecr.Module.Services.Ingenico.Recovery
                 // Call print service to void
                 Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Calling PrintReceiptGmpProvider.EftPosPrintOrder...");
                 var voidResult = PrintVoid.EftPosVoidPrintOrder();
-               
-                if (voidResult != null && voidResult.ReturnCode == 0  && voidResult.ReturnCode == Defines.TRAN_RESULT_OK)
+
+                // TRAN_RESULT_OK = 0x0000
+                if (voidResult != null && voidResult.ReturnCode == 0)
                 {
                     Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - SUCCESS!");
                     return true;
                 }
                 else
                 {
-                    Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - FAILED");
-                   
+                    Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - FAILED - ReturnCode: {voidResult?.ReturnCode}");
+
                     return false;
                 }
             }

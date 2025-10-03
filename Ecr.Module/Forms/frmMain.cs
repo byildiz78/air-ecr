@@ -194,18 +194,54 @@ namespace Ecr.Module.Forms
             {
                 await System.Threading.Tasks.Task.Run(() =>
                 {
+                    // Settings yükle
+                    Services.Ingenico.Models.DataStore.gmpxml = System.IO.Path.Combine(System.Windows.Forms.Application.StartupPath, "GMP.XML");
+                    Services.Ingenico.Models.DataStore.gmpini = System.IO.Path.Combine(System.Windows.Forms.Application.StartupPath, "GMP.ini");
+                    Services.Ingenico.Settings.SettingsInfo.getIniValues();
+                    Services.Ingenico.Settings.SettingsInfo.getGMPIniValues();
+                    Services.Ingenico.Settings.SettingsInfo.setXmlValues();
+
                     // Pairing yaparak cihaz bilgilerini al
                     var pairing = new Services.Ingenico.Pairing.PairingGmpProviderV2();
                     var result = pairing.GmpPairing();
 
                     if (result.ReturnCode == Services.Ingenico.GmpIngenico.Defines.TRAN_RESULT_OK && result.GmpInfo != null)
                     {
+                        // Bank list ve header bilgilerini ekle
+                        var gmpBankList = new Services.Ingenico.BankList.BankList();
+                        result.GmpInfo.BankInfoList = gmpBankList.GetBankList().Data;
+
+                        var header = new Services.Ingenico.ReceiptHeader.Header();
+                        result.GmpInfo.fiscalHeader = header.GmpGetReceiptHeader().Data;
+
+                        // Echo bilgilerini al
+                        Services.Ingenico.GmpIngenico.ST_ECHO stEcho = new Services.Ingenico.GmpIngenico.ST_ECHO();
+                        result.ReturnCode = Services.Ingenico.GmpIngenico.Json_GMPSmartDLL.FP3_Echo(
+                            result.GmpInfo.CurrentInterface,
+                            ref stEcho,
+                            Services.Ingenico.GmpIngenico.Defines.TIMEOUT_ECHO);
+                        result.GmpInfo.ActiveCashier = stEcho.activeCashier.name;
+                        result.GmpInfo.ActiveCashierNo = stEcho.activeCashier.index + 1;
+                        result.GmpInfo.EcrStatus = (int)stEcho.status;
+                        result.GmpInfo.ecrMode = stEcho.ecrMode;
+
+                        // CRITICAL: Global state'i güncelle
+                        Services.Ingenico.Models.DataStore.gmpResult = result;
+                        Services.Ingenico.Models.DataStore.Connection = Services.Ingenico.Models.ConnectionStatus.Connected;
+
                         // Dashboard'a cihaz bilgilerini gönder
                         dashboardPanel.UpdateDeviceInfo(result.GmpInfo);
                         _logger.Information("Cihaz bilgileri dashboard'a yüklendi");
+
+                        // Pairing başarılı - şimdi orphan transactions için recovery çalıştır
+                        TryRecoveryAfterPairing();
+
+                        // 7 günden eski dosyaları temizle
+                        CleanOldOrderFiles();
                     }
                     else
                     {
+                        Services.Ingenico.Models.DataStore.Connection = Services.Ingenico.Models.ConnectionStatus.NotConnected;
                         _logger.Warning("Cihaz bilgileri alınamadı: {Message}", result.ReturnCodeMessage);
                     }
                 });
@@ -213,6 +249,93 @@ namespace Ecr.Module.Forms
             catch (Exception ex)
             {
                 _logger.Error(ex, "Cihaz bilgileri yüklenirken hata: {Message}", ex.Message);
+            }
+        }
+
+        private void CleanOldOrderFiles()
+        {
+            try
+            {
+                Console.WriteLine("[CLEANUP] ========================================");
+                Console.WriteLine("[CLEANUP] Starting cleanup of old order files (>7 days)...");
+                Console.WriteLine("[CLEANUP] ========================================");
+
+                var baseFolder = System.Windows.Forms.Application.StartupPath + "\\CommandBackup";
+                var folders = new[]
+                {
+                    baseFolder + "\\Waiting",
+                    baseFolder + "\\Completed",
+                    baseFolder + "\\Cancel",
+                    baseFolder + "\\Exception",
+                    baseFolder + "\\Return"
+                };
+
+                int totalDeleted = 0;
+                var cutoffDate = DateTime.Now.AddDays(-7);
+
+                foreach (var folder in folders)
+                {
+                    if (!System.IO.Directory.Exists(folder))
+                        continue;
+
+                    var files = System.IO.Directory.GetFiles(folder, "*.txt");
+                    Console.WriteLine($"[CLEANUP] Checking folder: {System.IO.Path.GetFileName(folder)} - {files.Length} files");
+
+                    foreach (var file in files)
+                    {
+                        try
+                        {
+                            var fileInfo = new System.IO.FileInfo(file);
+                            if (fileInfo.CreationTime < cutoffDate)
+                            {
+                                Console.WriteLine($"[CLEANUP] Deleting old file: {fileInfo.Name} (Created: {fileInfo.CreationTime:yyyy-MM-dd HH:mm:ss})");
+                                System.IO.File.Delete(file);
+                                totalDeleted++;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[CLEANUP] Error deleting file {System.IO.Path.GetFileName(file)}: {ex.Message}");
+                            _logger.Warning($"Eski dosya silinemedi: {System.IO.Path.GetFileName(file)} - {ex.Message}");
+                        }
+                    }
+                }
+
+                Console.WriteLine($"[CLEANUP] Cleanup completed. Total files deleted: {totalDeleted}");
+                _logger.Information($"Eski order dosyaları temizlendi: {totalDeleted} dosya silindi (>7 gün)");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[CLEANUP] ERROR: {ex.Message}");
+                _logger.Error(ex, "Eski dosyaları temizlerken hata oluştu");
+            }
+        }
+
+        private void TryRecoveryAfterPairing()
+        {
+            try
+            {
+                Console.WriteLine("[RECOVERY-POST-PAIRING] ========================================");
+                Console.WriteLine("[RECOVERY-POST-PAIRING] Starting orphan transaction recovery...");
+                Console.WriteLine("[RECOVERY-POST-PAIRING] ========================================");
+
+                _logger.Information("Post-Pairing: Checking for orphan transactions...");
+
+                var recovery = new Services.Ingenico.Recovery.RecoveryCoordinator();
+                var result = recovery.AttemptRecovery();
+
+                Console.WriteLine($"[RECOVERY-POST-PAIRING] Recovery completed: Action={result.RecoveryAction}");
+
+                if (result.OrphanOrders != null && result.OrphanOrders.Count > 0)
+                {
+                    _logger.Information($"Post-Pairing Recovery: Processed {result.OrphanOrders.Count} orphan order(s)");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[RECOVERY-POST-PAIRING] ERROR: {ex.Message}");
+                _logger.Error(ex, "Post-pairing recovery failed - continuing normally");
+                // Don't break pairing flow
             }
         }
 

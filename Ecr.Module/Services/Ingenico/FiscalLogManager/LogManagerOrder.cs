@@ -584,6 +584,7 @@ namespace Ecr.Module.Services.Ingenico.FiscalLogManager
             {
                 string safeSourceId = CleanFileName(sourceId);
                 string sourceFilePath = Path.Combine(_logFolder, safeSourceId + ".txt");
+                string sourceFiscalFilePath = Path.Combine(_logFolder, safeSourceId + "_Fiscal.txt");
 
                 string targetFolder;
                 switch (folderType)
@@ -608,25 +609,49 @@ namespace Ecr.Module.Services.Ingenico.FiscalLogManager
                         break;
                 }
 
-                if (!File.Exists(sourceFilePath))
+                // Ana dosya veya Fiscal dosyası olmalı
+                bool hasMainFile = File.Exists(sourceFilePath);
+                bool hasFiscalFile = File.Exists(sourceFiscalFilePath);
+
+                if (!hasMainFile && !hasFiscalFile)
                     return false;
 
                 if (!Directory.Exists(targetFolder))
                     Directory.CreateDirectory(targetFolder);
 
-                // İlk hedef dosya yolu
-                string targetFilePath = Path.Combine(targetFolder, safeSourceId + ".txt");
-
-                // Eğer hedef dosya varsa sonuna _yeni ekle
-                int counter = 1;
-                while (File.Exists(targetFilePath))
+                // Ana .txt dosyasını taşı (varsa)
+                if (hasMainFile)
                 {
-                    string newFileName = $"{safeSourceId}_yeni{(counter > 1 ? counter.ToString() : "")}.txt";
-                    targetFilePath = Path.Combine(targetFolder, newFileName);
-                    counter++;
+                    string targetFilePath = Path.Combine(targetFolder, safeSourceId + ".txt");
+
+                    // Eğer hedef dosya varsa sonuna _yeni ekle
+                    int counter = 1;
+                    while (File.Exists(targetFilePath))
+                    {
+                        string newFileName = $"{safeSourceId}_yeni{(counter > 1 ? counter.ToString() : "")}.txt";
+                        targetFilePath = Path.Combine(targetFolder, newFileName);
+                        counter++;
+                    }
+
+                    File.Move(sourceFilePath, targetFilePath);
                 }
 
-                File.Move(sourceFilePath, targetFilePath);
+                // _Fiscal.txt dosyasını taşı (varsa)
+                if (hasFiscalFile)
+                {
+                    string targetFiscalFilePath = Path.Combine(targetFolder, safeSourceId + "_Fiscal.txt");
+
+                    // Eğer hedef dosya varsa sonuna _yeni ekle
+                    int counter = 1;
+                    while (File.Exists(targetFiscalFilePath))
+                    {
+                        string newFiscalFileName = $"{safeSourceId}_Fiscal_yeni{(counter > 1 ? counter.ToString() : "")}.txt";
+                        targetFiscalFilePath = Path.Combine(targetFolder, newFiscalFileName);
+                        counter++;
+                    }
+
+                    File.Move(sourceFiscalFilePath, targetFiscalFilePath);
+                }
 
                 return true;
             }

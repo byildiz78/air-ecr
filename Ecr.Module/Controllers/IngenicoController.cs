@@ -705,6 +705,82 @@ namespace Ecr.Module.Controllers
             }, "SetHeader");
         }
 
+        [HttpPost]
+        [Route("VoidAll")]
+        public IngenicoApiResponse<GmpPrintReceiptDto> VoidAll()
+        {
+            ShowNotification("API İsteği Alındı", "HttpPost /ingenico/VoidAll");
+            _logger.Information($"API isteği Alındı: HttpPost /ingenico/VoidAll");
+
+            return ExecuteWithLock(() =>
+            {
+                var response = new IngenicoApiResponse<GmpPrintReceiptDto>();
+
+                try
+                {
+                    DataStore.CashRegisterStatus = "FİŞ İPTAL EDİLİYOR";
+                    response.Data = PrinterVoidAll.EftPosVoidPrintOrder();
+                    DataStore.CashRegisterStatus = "YAZARKASA BOŞTA";
+
+                    response.Status = response.Data.ReturnCode == Defines.TRAN_RESULT_OK;
+                    response.ErrorCode = response.Data.ReturnCode.ToString();
+                    response.Message = response.Data.ReturnStringMessage;
+                }
+                catch (Exception ex)
+                {
+                    response.Status = false;
+                    response.ErrorCode = "9999";
+                    response.Message = ex.Message;
+                    DataStore.CashRegisterStatus = "YAZARKASA BOŞTA";
+                }
+
+                _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/VoidAll => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
+                return response;
+            }, "VoidAll");
+        }
+
+        [HttpPost]
+        [Route("VoidPayment")]
+        public IngenicoApiResponse<GmpPrintReceiptDto> VoidPayment([FromBody] Models.VoidPaymentRequest request)
+        {
+            ShowNotification("API İsteği Alındı", "HttpPost /ingenico/VoidPayment");
+            _logger.Information($"API isteği Alındı: HttpPost /ingenico/VoidPayment - PaymentIndex: {request?.PaymentIndex}");
+
+            return ExecuteWithLock(() =>
+            {
+                var response = new IngenicoApiResponse<GmpPrintReceiptDto>();
+
+                try
+                {
+                    if (request == null)
+                    {
+                        response.Status = false;
+                        response.ErrorCode = "9998";
+                        response.Message = "Request body boş olamaz";
+                        return response;
+                    }
+
+                    DataStore.CashRegisterStatus = "ÖDEME İPTAL EDİLİYOR";
+                    response.Data = Services.Ingenico.SingleMethod.VoidPayment.VoidPaymentByIndex(request.PaymentIndex);
+                    DataStore.CashRegisterStatus = "YAZARKASA BOŞTA";
+
+                    response.Status = response.Data.ReturnCode == Defines.TRAN_RESULT_OK;
+                    response.ErrorCode = response.Data.ReturnCode.ToString();
+                    response.Message = response.Data.ReturnStringMessage;
+                }
+                catch (Exception ex)
+                {
+                    response.Status = false;
+                    response.ErrorCode = "9999";
+                    response.Message = ex.Message;
+                    DataStore.CashRegisterStatus = "YAZARKASA BOŞTA";
+                }
+
+                _logger.Information($"API isteğine cevap verildi : HttpPost /ingenico/VoidPayment => {Newtonsoft.Json.JsonConvert.SerializeObject(response)}");
+                return response;
+            }, "VoidPayment");
+        }
+
         /// <summary>
         /// Phase 2.1: Startup Recovery Hook
         /// SAFE: Try-catch wrapped, never breaks application startup

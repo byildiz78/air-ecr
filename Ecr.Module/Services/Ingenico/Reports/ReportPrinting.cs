@@ -19,7 +19,22 @@ namespace Ecr.Module.Services.Ingenico.Reports
                 ushort ZNo = 0;
                 ushort FNo = 0;
                 ushort EKUNo = 0;
-                stFunctionParameters.Password.supervisor = SettingsValues.adminpassword ?? "0000";
+
+                // Admin şifresi - Önce request'ten al, yoksa settings'den
+                var adminPassword = reportType.AdminPassword;
+                if (string.IsNullOrWhiteSpace(adminPassword))
+                {
+                    adminPassword = SettingsValues.adminpassword;
+                }
+                if (string.IsNullOrWhiteSpace(adminPassword))
+                {
+                    adminPassword = "0000";
+                }
+                stFunctionParameters.Password.supervisor = adminPassword.Trim();
+
+                // Debug log - şifre kontrolü için
+                System.Diagnostics.Debug.WriteLine($"[ReportPrint] Admin Password: '{adminPassword}' (Length: {adminPassword?.Length})");
+
                 ST_PAYMENT_REQUEST StPaymentRequest = new ST_PAYMENT_REQUEST();
                 int againCount = 0;
                 uint retcode;
