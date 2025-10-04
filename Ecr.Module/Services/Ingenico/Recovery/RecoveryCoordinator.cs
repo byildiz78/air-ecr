@@ -580,35 +580,6 @@ namespace Ecr.Module.Services.Ingenico.Recovery
                     $"Processing orphan Fiscal file: OrderKey={orderKey}",
                     source: "RecoveryCoordinator");
 
-                // Check if there's an active transaction on device by reading the file
-                Console.WriteLine($"[RECOVERY] TryVoidSingleOrphanTransaction - Reading fiscal file...");
-                var fiscalData = _logManager.GetOrderFileFiscal(orderKey);
-
-                if (fiscalData == null)
-                {
-                    Console.WriteLine($"[RECOVERY] TryVoidSingleOrphanTransaction - Fiscal data is NULL");
-                    _logger.LogWarning(LogCategory.Recovery,
-                        $"Could not read Fiscal file: OrderKey={orderKey}",
-                        source: "RecoveryCoordinator");
-                    return;
-                }
-
-                Console.WriteLine($"[RECOVERY] TryVoidSingleOrphanTransaction - Fiscal data loaded successfully");
-
-                // Eğer nullable alanlar null ise, bu önceki void attempt'ten kalmıştır - skip et
-                if (!fiscalData.PrintInvoice.HasValue || !fiscalData.IsFiscalOrder.HasValue)
-                {
-                    Console.WriteLine($"[RECOVERY] TryVoidSingleOrphanTransaction - Fiscal data has null fields (previous void attempt), moving to Exception");
-                    _logger.LogWarning(LogCategory.Recovery,
-                        $"Fiscal file has null fields (corrupted or previous void attempt): OrderKey={orderKey}",
-                        source: "RecoveryCoordinator");
-
-                    // Exception'a taşı
-                    _logManager.MoveLogFile(orderKey, LogFolderType.Exception);
-                    _metrics.IncrementCounter("recovery.orphan.corrupted");
-                    return;
-                }
-
                 // Check connection
                 var connectionState = _connectionManager.GetState();
                 Console.WriteLine($"[RECOVERY] TryVoidSingleOrphanTransaction - Connection Status: {connectionState.Status}, Interface: {connectionState.CurrentInterface}");
@@ -622,13 +593,13 @@ namespace Ecr.Module.Services.Ingenico.Recovery
                     return;
                 }
 
-                // Call EftPosPrintOrder with IsVoidedFiscal=true to void the transaction
+                // Simply call VoidAll - no need to read/parse fiscal file
                 Console.WriteLine($"[RECOVERY] TryVoidSingleOrphanTransaction - Calling VoidOrphanTransaction...");
                 _logger.LogInformation(LogCategory.Recovery,
-                    $"Attempting to void orphan transaction: OrderKey={orderKey}",
+                    $"Attempting to void orphan transaction with VoidAll: OrderKey={orderKey}",
                     source: "RecoveryCoordinator");
 
-                var voidResult = VoidOrphanTransaction(fiscalData, orderKey);
+                var voidResult = VoidOrphanTransaction(orderKey);
 
                 if (voidResult)
                 {
@@ -666,38 +637,80 @@ namespace Ecr.Module.Services.Ingenico.Recovery
         }
 
         /// <summary>
-        /// Void orphan transaction by calling EftPosPrintOrder with IsVoidedFiscal=true
+        /// Void orphan transaction by calling VoidAll (FP3_VoidAll)
+        /// Calls VoidAll twice with 2 second delay for reliability
+        /// Uses lock mechanism to prevent concurrent access to device
         /// </summary>
-        private bool VoidOrphanTransaction(FiscalOrder fiscalData, string orderKey)
+        private bool VoidOrphanTransaction(string orderKey)
         {
             try
             {
                 Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - OrderKey: {orderKey}");
-                Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Current IsVoidedFiscal: {fiscalData.IsVoidedFiscal}");
-
-                // Set IsVoidedFiscal to true to void the transaction
-                fiscalData.IsVoidedFiscal = true;
-                Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Set IsVoidedFiscal = true");
 
                 _logger.LogInformation(LogCategory.Recovery,
-                    $"Calling EftPosPrintOrder to void transaction: OrderKey={orderKey}",
+                    $"Calling VoidAll to void orphan transaction: OrderKey={orderKey}",
                     source: "RecoveryCoordinator");
 
-                // Call print service to void
-                Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Calling PrintReceiptGmpProvider.EftPosPrintOrder...");
-                var voidResult = PrintVoid.EftPosVoidPrintOrder();
-
-                // TRAN_RESULT_OK = 0x0000
-                if (voidResult != null && voidResult.ReturnCode == 0)
+                // Acquire lock before accessing device (same as VoidAll endpoint)
+                bool lockAcquired = false;
+                try
                 {
-                    Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - SUCCESS!");
-                    return true;
+                    lockAcquired = System.Threading.Monitor.TryEnter(Controllers.IngenicoController._ingenicoLock, TimeSpan.FromSeconds(120));
+
+                    if (!lockAcquired)
+                    {
+                        Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Could not acquire lock, device busy");
+                        _logger.LogWarning(LogCategory.Recovery,
+                            $"Could not acquire device lock for void operation: OrderKey={orderKey}",
+                            source: "RecoveryCoordinator");
+                        return false;
+                    }
+
+                    Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Lock acquired");
+
+                    // First VoidAll attempt
+                    Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - First VoidAll call...");
+                    DataStore.CashRegisterStatus = "FİŞ İPTAL EDİLİYOR (RECOVERY)";
+                    var voidResult1 = PrinterVoidAll.EftPosVoidPrintOrder();
+                    DataStore.CashRegisterStatus = "YAZARKASA BOŞTA";
+                    Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - First VoidAll result: {voidResult1?.ReturnCode}");
+
+                    // Wait 2 seconds
+                    Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Waiting 2 seconds...");
+                    System.Threading.Thread.Sleep(2000);
+
+                    // Second VoidAll attempt
+                    Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Second VoidAll call...");
+                    DataStore.CashRegisterStatus = "FİŞ İPTAL EDİLİYOR (RECOVERY)";
+                    var voidResult2 = PrinterVoidAll.EftPosVoidPrintOrder();
+                    DataStore.CashRegisterStatus = "YAZARKASA BOŞTA";
+                    Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Second VoidAll result: {voidResult2?.ReturnCode}");
+
+                    // Success if either attempt succeeded (TRAN_RESULT_OK = 0x0000)
+                    bool firstSuccess = voidResult1 != null && voidResult1.ReturnCode == 0;
+                    bool secondSuccess = voidResult2 != null && voidResult2.ReturnCode == 0;
+
+                    if (firstSuccess || secondSuccess)
+                    {
+                        Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - SUCCESS! Transaction voided on device.");
+                        return true;
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - FAILED - Both attempts failed.");
+                        Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - First: {voidResult1?.ReturnCode}, Second: {voidResult2?.ReturnCode}");
+                        Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - No transaction exists on device or void failed.");
+                        return false;
+                    }
                 }
-                else
+                finally
                 {
-                    Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - FAILED - ReturnCode: {voidResult?.ReturnCode}");
-
-                    return false;
+                    if (lockAcquired)
+                    {
+                        System.Threading.Monitor.Exit(Controllers.IngenicoController._ingenicoLock);
+                        Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Lock released");
+                    }
+                    DataStore.CashRegisterStatus = "YAZARKASA BOŞTA";
                 }
             }
             catch (Exception ex)
@@ -709,6 +722,7 @@ namespace Ecr.Module.Services.Ingenico.Recovery
                     $"Exception during void operation: OrderKey={orderKey}",
                     exception: ex,
                     source: "RecoveryCoordinator");
+                DataStore.CashRegisterStatus = "YAZARKASA BOŞTA";
                 return false;
             }
         }

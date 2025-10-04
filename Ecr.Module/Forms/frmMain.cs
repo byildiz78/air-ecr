@@ -13,7 +13,7 @@ namespace Ecr.Module.Forms
         private bool _apiRunning = false;
         private NotifyIcon _trayIcon;
         private ContextMenuStrip _trayMenu;
-        private string _baseAddress = "http://+:{0}/"; // + allows both localhost and network access
+        private string _baseAddress = "";
         private int _port;
         private ILogger _logger;
 
@@ -48,9 +48,9 @@ namespace Ecr.Module.Forms
         private void Form1_Load(object sender, EventArgs e)
         {
             Toggle();
-            // Normal açılsın - kullanıcı isterse minimize edebilir
-            WindowState = FormWindowState.Normal;
-            ShowInTaskbar = true;
+            // İlk açılışta tray'e gönder
+            WindowState = FormWindowState.Minimized;
+            ShowInTaskbar = false;
             _trayIcon.Visible = true;
         }
 
@@ -74,8 +74,27 @@ namespace Ecr.Module.Forms
         {
             try
             {
-                _baseAddress = string.Format(_baseAddress, _port);
-                _webApp = WebApp.Start<Startup>(url: _baseAddress);
+                // Makinenin local IP adresini al
+                var localIp = GetLocalIPAddress();
+
+                // Hem localhost hem de local IP'den erişilebilir olması için her ikisini de başlat
+                var urls = new[]
+                {
+                    $"http://localhost:{_port}/",
+                    $"http://127.0.0.1:{_port}/",
+                    $"http://{localIp}:{_port}/"
+                };
+
+                _baseAddress = string.Join(", ", urls);
+
+                // OWIN birden fazla URL'de dinleyebilir
+                var startOptions = new Microsoft.Owin.Hosting.StartOptions();
+                foreach (var url in urls)
+                {
+                    startOptions.Urls.Add(url);
+                }
+
+                _webApp = WebApp.Start<Startup>(startOptions);
                 _logger.Information("API sunucusu başlatıldı: {BaseAddress}", _baseAddress);
 
                 dashboardPanel.SetApiRunning(true);
@@ -86,6 +105,26 @@ namespace Ecr.Module.Forms
             catch (Exception ex)
             {
                 _logger.Error(ex, "API sunucusu başlatılamadı: {Message}", ex.Message);
+            }
+        }
+
+        private string GetLocalIPAddress()
+        {
+            try
+            {
+                var host = System.Net.Dns.GetHostEntry(System.Net.Dns.GetHostName());
+                foreach (var ip in host.AddressList)
+                {
+                    if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                    {
+                        return ip.ToString();
+                    }
+                }
+                return "127.0.0.1";
+            }
+            catch
+            {
+                return "127.0.0.1";
             }
         }
 
@@ -151,7 +190,7 @@ namespace Ecr.Module.Forms
         private void OnTrayOpenClick(object sender, EventArgs e)
         {
             Show();
-            WindowState = FormWindowState.Normal;
+            WindowState = FormWindowState.Maximized;
             ShowInTaskbar = true;
             Activate();
         }

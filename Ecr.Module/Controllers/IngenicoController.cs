@@ -31,7 +31,7 @@ namespace Ecr.Module.Controllers
         private readonly IngenicoService _ingenicoService;
 
         // Global lock - Ingenico aynı anda sadece 1 işlem yapabilir
-        private static readonly object _ingenicoLock = new object();
+        internal static readonly object _ingenicoLock = new object();
         private const int LOCK_TIMEOUT_MS = 120000; // 2 dakika (max işlem süresi)
 
         public IngenicoController()

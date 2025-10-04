@@ -10,6 +10,7 @@ namespace Ecr.Module.Services.Ingenico.GmpIngenico
             string result = "";
             switch (errorCode)
             {
+                case 5731: result = "KAĞIT KONTROL EDİNİZ"; break; // 0x1663 - Paper error
                 case Defines.TRAN_RESULT_OK: result = DescDefines.TRAN_RESULT_OK; break;
                 case Defines.TRAN_RESULT_NOT_ALLOWED: result = DescDefines.TRAN_RESULT_NOT_ALLOWED; break;
                 case Defines.TRAN_RESULT_TIMEOUT: result = DescDefines.TRAN_RESULT_TIMEOUT; break;
