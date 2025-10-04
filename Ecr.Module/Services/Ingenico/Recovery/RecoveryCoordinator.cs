@@ -462,6 +462,7 @@ namespace Ecr.Module.Services.Ingenico.Recovery
         /// <summary>
         /// Check for orphan orders in Waiting folder
         /// Orders without corresponding transaction state
+        /// IMPORTANT: Also checks device for active transaction even if no waiting files
         /// </summary>
         private void CheckOrphanOrders(RecoveryCoordinatorResult result)
         {
@@ -493,7 +494,11 @@ namespace Ecr.Module.Services.Ingenico.Recovery
                 }
                 else
                 {
-                    Console.WriteLine("[RECOVERY] CheckOrphanOrders - No orphan files found");
+                    Console.WriteLine("[RECOVERY] CheckOrphanOrders - No orphan files found in Waiting folder");
+
+                    // Check device for active transaction anyway
+                    Console.WriteLine("[RECOVERY] CheckOrphanOrders - Checking device for active transaction (even without waiting files)...");
+                    CheckAndVoidActiveTransaction();
                 }
             }
             catch (Exception ex)
@@ -503,6 +508,48 @@ namespace Ecr.Module.Services.Ingenico.Recovery
 
                 _logger.LogError(LogCategory.Recovery,
                     "Failed to check orphan orders",
+                    exception: ex,
+                    source: "RecoveryCoordinator");
+            }
+        }
+
+        /// <summary>
+        /// Check device for active transaction and void it if exists
+        /// Called when there are no waiting files but we still want to check device
+        /// </summary>
+        private void CheckAndVoidActiveTransaction()
+        {
+            try
+            {
+                // Check connection
+                var connectionState = _connectionManager.GetState();
+                if (connectionState.Status != Models.ConnectionStatus.Connected || connectionState.CurrentInterface == 0)
+                {
+                    Console.WriteLine($"[RECOVERY] CheckAndVoidActiveTransaction - Not connected, skipping");
+                    return;
+                }
+
+                Console.WriteLine($"[RECOVERY] CheckAndVoidActiveTransaction - Calling VoidOrphanTransaction...");
+                var voidResult = VoidOrphanTransaction("no-waiting-file");
+
+                if (voidResult)
+                {
+                    Console.WriteLine($"[RECOVERY] CheckAndVoidActiveTransaction - SUCCESS - Active transaction on device was voided");
+                    _logger.LogInformation(LogCategory.Recovery,
+                        "Active transaction found on device and voided (no waiting files)",
+                        source: "RecoveryCoordinator");
+                    _metrics.IncrementCounter("recovery.device.orphan.voided");
+                }
+                else
+                {
+                    Console.WriteLine($"[RECOVERY] CheckAndVoidActiveTransaction - No active transaction on device or void failed");
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[RECOVERY] CheckAndVoidActiveTransaction - ERROR: {ex.Message}");
+                _logger.LogError(LogCategory.Recovery,
+                    "Failed to check/void active transaction on device",
                     exception: ex,
                     source: "RecoveryCoordinator");
             }
@@ -667,6 +714,22 @@ namespace Ecr.Module.Services.Ingenico.Recovery
                     }
 
                     Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Lock acquired");
+
+                    // Check if there's an active transaction on device first
+                    Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Checking for active transaction with GetTicket...");
+                    var ticketResult = SingleFunctions.EftPosGetTicket();
+                    Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - GetTicket result: {ticketResult?.ReturnCode}, FNo: {ticketResult?.TicketInfo?.FNo}");
+
+                    if (ticketResult == null || ticketResult.TicketInfo == null || ticketResult.TicketInfo.FNo == 0)
+                    {
+                        Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - No active transaction on device");
+                        _logger.LogInformation(LogCategory.Recovery,
+                            $"No active transaction on device for OrderKey={orderKey}",
+                            source: "RecoveryCoordinator");
+                        return false;
+                    }
+
+                    Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - Active transaction found (FNo: {ticketResult.TicketInfo.FNo}), proceeding with VoidAll...");
 
                     // First VoidAll attempt
                     Console.WriteLine($"[RECOVERY] VoidOrphanTransaction - First VoidAll call...");
